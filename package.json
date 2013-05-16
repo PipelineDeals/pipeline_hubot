@@ -26,7 +26,7 @@
   "dependencies": {
     "hubot": ">= 2.5.1",
     "hubot-scripts": ">= 2.4.2",
-    "hubot-hipchat": "~2.4.5-1",
+    "hubot-hipchat": "~2.5.1-1",
     "xml2js": "0.2",
     "jsdom": "0.2.14"
   },
