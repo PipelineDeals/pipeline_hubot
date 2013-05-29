@@ -21,9 +21,3 @@ module.exports = (robot) ->
     else
       msg.send 'Environment variable HUBOT_HANGOUT_URL has not been set. Add EXPORT HUBOT_HANGOUT_URL="..." to your Procfile.'
 
-  robot.respond /jazz hands/i, (msg) ->
-    if process.env.HUBOT_HANGOUT_URL
-      msg.send 'hubot animate me jazz hands'
-      msg.send process.env.HUBOT_HANGOUT_URL
-    else
-      msg.send 'Environment variable HUBOT_HANGOUT_URL has not been set. Add EXPORT HUBOT_HANGOUT_URL="..." to your Procfile.'
