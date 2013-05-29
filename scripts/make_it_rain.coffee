@@ -8,7 +8,7 @@
 #   None
 #
 # Commands:
-#   make it rain - Show picture of cash money yo
+#   hubot make it rain - Show picture of cash money yo
 #
 # Author:
 #  brandonhilkert
