@@ -59,3 +59,8 @@ module.exports = (robot) ->
           .get() (err, res, body) ->
             msg.send "Resolved FB ticket ##{fb_ticket}"
 
+    # Comment some approval on the PR
+    github_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{number}/comments?access_token=#{github_access_token}"
+    emojis = ["+1", "smile", "relieved", "sparkles", "star2", "heart", "notes", "ok_hand", "clap", "raised_hands", "dancer", "kiss", "100", "ship", "shipit", "beer", "high_heel", "moneybag", "zap", "sunny", "dolphin"]
+    payload = JSON.stringify({body: ":#{msg.random emojis}:"})
+    msg.http(github_url).post(payload)
