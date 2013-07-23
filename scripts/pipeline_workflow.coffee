@@ -25,12 +25,19 @@ fogbugz_token = process.env.HUBOT_FOGBUGZ_TOKEN
 
 module.exports = (robot) ->
   robot.respond /pr accept (\d+)/i, (msg) ->
-    number = msg.match[1]
+    pr_number = msg.match[1]
+
+    # Add random approval as comment on the PR
+    github_comment_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{pr_number}/comments?access_token=#{github_access_token}"
+    emojis = ["+1", "smile", "relieved", "sparkles", "star2", "heart", "notes", "ok_hand", "clap", "raised_hands", "dancer", "kiss", "100", "ship", "shipit", "beer", "high_heel", "moneybag", "zap", "sunny", "dolphin"]
+    emoji = emojis[Math.floor(Math.random() * emojis.length)]
+    payload = JSON.stringify({ body: ":#{emoji}:" })
+    msg.http(github_comment_api_url).post(payload)
 
     # Assign PR to QA
-    github_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{number}?access_token=#{github_access_token}"
-    payload = JSON.stringify({assignee: github_qa_username})
-    msg.http(github_url).post(payload) (err, res, body) ->
+    github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{pr_number}?access_token=#{github_access_token}"
+    payload = JSON.stringify({ assignee: github_qa_username })
+    msg.http(github_issue_api_url).post(payload) (err, res, body) ->
       response = JSON.parse body
 
       if response.number
