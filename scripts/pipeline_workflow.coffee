@@ -50,5 +50,5 @@ module.exports = (robot) ->
             token: fogbugz_token
             ixBug: fb_ticket_number
           .get() (err, res, body) ->
-            ms.send "Resolved FB ticket ##{fb_ticket}"
+            msg.send "Resolved FB ticket ##{fb_ticket}"
 
