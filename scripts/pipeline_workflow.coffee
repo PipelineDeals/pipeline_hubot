@@ -45,17 +45,18 @@ module.exports = (robot) ->
       else
         msg.send response.message
 
-      fb_ticket = response.pull_request.title.match("/\#(\d+)/")
+      if repsonse.pull_request and response.pull_request.title
+        fb_ticket = response.pull_request.title.match("/\#(\d+)/")
 
-      # Resolve FB ticket
-      if fb_ticket
-        fb_ticket_number = fb_ticket[1]
+        # Resolve FB ticket
+        if fb_ticket
+          fb_ticket_number = fb_ticket[1]
 
-        msg.http("https://#{fogbugz_host}/api.asp")
-          .query
-            cmd: "resolve"
-            token: fogbugz_token
-            ixBug: fb_ticket_number
-          .get() (err, res, body) ->
-            msg.send "Resolved FB ticket ##{fb_ticket}"
+          msg.http("https://#{fogbugz_host}/api.asp")
+            .query
+              cmd: "resolve"
+              token: fogbugz_token
+              ixBug: fb_ticket_number
+            .get() (err, res, body) ->
+              msg.send "Resolved FB ticket ##{fb_ticket}"
 
