@@ -40,8 +40,8 @@ module.exports = (robot) ->
     msg.http(github_issue_api_url).post(payload) (err, res, body) ->
       response = JSON.parse body
 
-      if response.number
-        msg.send "Assigned <a href='#{response.pull_request.html_url}'>##{response.number}</a> to @#{github_qa_username}"
-      else
-        msg.send response.message
+      # if response.number
+      #   msg.send "Assigned <a href='#{response.pull_request.html_url}'>##{response.number}</a> to @#{github_qa_username}"
+      # else
+      #   msg.send response.message
 
