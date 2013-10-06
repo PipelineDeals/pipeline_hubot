@@ -45,3 +45,32 @@ module.exports = (robot) ->
       # else
       #   msg.send response.message
 
+  robot.respond /pr deadbeats/i, (msg) ->
+    parseIssues = (issues) ->
+      parsedIssues = []
+      now = new Date()
+      millisecondsPerDay = 1000 * 60 * 60 * 24;
+      for issue in issues
+        diff = now - (new Date(issue.created_at))
+        daysOld = diff / millisecondsPerDay
+
+        oldIssue = {}
+        oldIssue.number = issue.number
+        oldIssue.title = issue.title
+        oldIssue.owner = issue.assignee.login
+        oldIssue.href = issue.html_url
+        oldIssue.daysOld = daysOld
+        if daysOld >= 1
+          parsedIssues.push(oldIssue)
+      parsedIssues
+
+    github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues?access_token=#{github_access_token}"
+    msg.http(github_issue_api_url).get() (err, res, body) ->
+      issues = JSON.parse(body)
+      issues = parseIssues(issues)
+      for issue in issues
+        msg.send "PR #{issue.number} is #{Math.round(issue.daysOld)} days old, owned by #{issue.owner} -- #{issue.href}"
+      if issues.length > 5
+        msg.send "That's a lot of issues, and a lot of deadbeats.  Get your act together, fools!"
+      else
+        msg.send "Nice work managing those PRs!!"
