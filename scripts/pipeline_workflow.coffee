@@ -71,10 +71,8 @@ module.exports = (robot) ->
     msg.http(github_issue_api_url).get() (err, res, body) ->
       issues = JSON.parse(body)
       issues = parseIssues(issues)
-      message = ""
       for issue in issues
-        message += "PR #{issue.number} is #{issue.daysOld} days old, owned by #{issue.owner} -- #{issue.href}\n"
-      msg.send message
+        msg.send "PR #{issue.number} is #{issue.daysOld} days old, owned by #{issue.owner} -- #{issue.href}"
       if issues.length > 5
         msg.send "That's a lot of issues, and a lot of deadbeats.  Get your act together, fools!"
       else
