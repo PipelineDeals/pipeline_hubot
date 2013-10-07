@@ -63,7 +63,7 @@ module.exports = (robot) ->
           oldIssue.owner = "UNASSIGNED"
         oldIssue.href = issue.html_url
         oldIssue.daysOld = Math.round(daysOld)
-        if daysOld >= 1
+        if daysOld >= 1 and oldIssue.title.indexOf("WIP") == -1
           parsedIssues.push(oldIssue)
       parsedIssues
 
