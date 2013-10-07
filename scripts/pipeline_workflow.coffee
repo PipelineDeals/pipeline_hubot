@@ -57,9 +57,12 @@ module.exports = (robot) ->
         oldIssue = {}
         oldIssue.number = issue.number
         oldIssue.title = issue.title
-        oldIssue.owner = issue.assignee.login
+        if issue.assignee
+          oldIssue.owner = issue.assignee.login
+        else
+          oldIssue.owner = "UNASSIGNED"
         oldIssue.href = issue.html_url
-        oldIssue.daysOld = daysOld
+        oldIssue.daysOld = Math.round(daysOld)
         if daysOld >= 1
           parsedIssues.push(oldIssue)
       parsedIssues
@@ -69,7 +72,7 @@ module.exports = (robot) ->
       issues = JSON.parse(body)
       issues = parseIssues(issues)
       for issue in issues
-        msg.send "PR #{issue.number} is #{Math.round(issue.daysOld)} days old, owned by #{issue.owner} -- #{issue.href}"
+        msg.send "PR #{issue.number} is #{issue.daysOld} days old, owned by #{issue.owner} -- #{issue.href}"
       if issues.length > 5
         msg.send "That's a lot of issues, and a lot of deadbeats.  Get your act together, fools!"
       else
