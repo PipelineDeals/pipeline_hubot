@@ -19,7 +19,6 @@ circleci_api_key = process.env.CIRCLECI_API_KEY
 module.exports = (robot) ->
   #robot.respond /build status (\d+)/i, (msg) ->
   robot.respond /build status/i, (msg) ->
-    msg.send "build status called"
     branch = msg.match[1]
     getRecentBuild = (branch) ->
       branch['recent_builds'][0]
