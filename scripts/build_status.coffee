@@ -29,7 +29,7 @@ module.exports = (robot) ->
       else if build.outcome == 'success'
         "#{name}:  SUCCESS as of build #{build.build_num} https://circleci.com/gh/PipelineDeals/pipeline_deals/#{build.build_num}\n"
       else if build.outcome == 'timedout'
-        "#{name}:  TIMEOUT as of build #{build.build_num} https://circleci.com/gh/PipelineDeals/pipeline_deals#{build.build_num}\n"
+        "#{name}:  TIMEOUT as of build #{build.build_num} https://circleci.com/gh/PipelineDeals/pipeline_deals/#{build.build_num}\n"
 
     circleci_url = "https://circleci.com/api/v1/projects?circle-token=#{circleci_api_key}"
     msg.http(circleci_url).headers("Accept": "application/json").get() (err, res, body) ->
