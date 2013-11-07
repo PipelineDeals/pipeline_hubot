@@ -76,10 +76,12 @@ module.exports = (robot) ->
   devAcceptPR = (user, prNum, msg) ->
     commentOnPR(user, prNum, msg)
     assignPRtoQA(prNum, msg)
+    msg.send("The ticket has been accepted by the Devs..")
 
   qAAcceptPR = (user, prNum, msg) ->
     commentOnPR("#{user} (QA)", prNum, msg)
     markTicketAsPeerReviewed(prNum, msg)
+    msg.send("The ticket has been accepted by QA.")
 
   commentOnPR = (user, prNum, msg) ->
     github_comment_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}/comments?access_token=#{github_access_token}"
@@ -106,7 +108,6 @@ module.exports = (robot) ->
         headers("Authorization": "Basic Z3JhbnQ6a3dhbnphYQ==", "Content-Type": "application/json").
         post(payload) (err, res, body) ->
           console.log "err = ", err
-          console.log "body = ", err
 
   getEmoji = ->
     emojis = ["+1", "smile", "relieved", "sparkles", "star2", "heart", "notes", "ok_hand", "clap", "raised_hands", "dancer", "kiss", "100", "ship", "shipit", "beer", "high_heel", "moneybag", "zap", "sunny", "dolphin"]
