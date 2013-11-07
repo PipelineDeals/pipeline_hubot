@@ -18,32 +18,24 @@
 #   brandonhilkert
 #
 
-github_access_token = process.env.HUBOT_GITHUB_ACCESS_TOKEN
+github_access_token = 'b62c2eec4bd20acdbb7e5263c7511c9605539362'
 github_qa_username = process.env.HUBOT_GITHUB_QA_USERNAME
+
 fogbugz_host = process.env.HUBOT_FOGBUGZ_HOST
 fogbugz_token = process.env.HUBOT_FOGBUGZ_TOKEN
 
+jira_token = process.env.JIRA_TOKEN
+
 module.exports = (robot) ->
-  robot.respond /pr accept (\d+)/i, (msg) ->
-    pr_number = msg.match[1]
+  robot.respond /pr dev accept (\d+)/i, (msg) ->
+    prNum = msg.match[1]
+    user = msg.message.user.name
+    devAcceptPR(user, prNum, msg)
 
-    # Add random approval as comment on the PR
-    github_comment_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{pr_number}/comments?access_token=#{github_access_token}"
-    emojis = ["+1", "smile", "relieved", "sparkles", "star2", "heart", "notes", "ok_hand", "clap", "raised_hands", "dancer", "kiss", "100", "ship", "shipit", "beer", "high_heel", "moneybag", "zap", "sunny", "dolphin"]
-    emoji = emojis[Math.floor(Math.random() * emojis.length)]
-    payload = JSON.stringify({ body: ":#{emoji}:" })
-    msg.http(github_comment_api_url).post(payload)
-
-    # Assign PR to QA
-    github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{pr_number}?access_token=#{github_access_token}"
-    payload = JSON.stringify({ assignee: github_qa_username })
-    msg.http(github_issue_api_url).post(payload) (err, res, body) ->
-      response = JSON.parse body
-
-      # if response.number
-      #   msg.send "Assigned <a href='#{response.pull_request.html_url}'>##{response.number}</a> to @#{github_qa_username}"
-      # else
-      #   msg.send response.message
+  robot.respond /pr qa accept (\d+)/i, (msg) ->
+    prNum = msg.match[1]
+    user = msg.message.user.name
+    qAAcceptPR(user, prNum, msg)
 
   robot.respond /pr deadbeats/i, (msg) ->
     parseIssues = (issues) ->
@@ -77,3 +69,43 @@ module.exports = (robot) ->
         msg.send "That's a lot of issues, and a lot of deadbeats.  Get your act together, fools!"
       else
         msg.send "Nice work managing those PRs!!"
+
+  ######################################
+  # Utility functions
+  ######################################
+  devAcceptPR = (user, prNum, msg) ->
+    commentOnPR(user, prNum, msg)
+    assignPRtoQA(prNum, msg)
+
+  qAAcceptPR = (user, prNum, msg) ->
+    commentOnPR("#{user} (QA)", prNum, msg)
+    markTicketAsPeerReviewed(prNum, msg)
+
+  commentOnPR = (user, prNum, msg) ->
+    github_comment_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}/comments?access_token=#{github_access_token}"
+    payload = JSON.stringify({ body: "#{user} approves!  :#{getEmoji()}:" })
+    msg.http(github_comment_api_url).post(payload)
+
+  assignPRtoQA = (prNum, msg) ->
+    github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}?access_token=#{github_access_token}"
+    payload = JSON.stringify({ assignee: github_qa_username })
+    msg.http(github_issue_api_url).post(payload) (err, res, body) ->
+      response = JSON.parse body
+
+  markTicketAsPeerReviewed = (prNum, msg) ->
+    github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}?access_token=#{github_access_token}"
+    msg.http(github_issue_api_url).get(github_issue_api_url) (err, res, body) ->
+      json = JSON.parse body
+      title = json['title']
+      re = /\[.*?\]/
+      ticketNum = re.exec(title)[0].replace('#','').replace('[','').replace(']','')
+      payload = '{"transition": {"id":"751"}}'
+      msg.
+        http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticketNum}/transitions").
+        headers("Authorization": "Basic Z3JhbnQ6a3dhbnphYQ==", "Content-Type": "application/json").
+        post(payload) (err, res, body) ->
+          response = JSON.parse body
+
+  getEmoji = ->
+    emojis = ["+1", "smile", "relieved", "sparkles", "star2", "heart", "notes", "ok_hand", "clap", "raised_hands", "dancer", "kiss", "100", "ship", "shipit", "beer", "high_heel", "moneybag", "zap", "sunny", "dolphin"]
+    emojis[Math.floor(Math.random() * emojis.length)]
