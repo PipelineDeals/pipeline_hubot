@@ -18,7 +18,7 @@
 #   brandonhilkert
 #
 
-github_access_token = 'b62c2eec4bd20acdbb7e5263c7511c9605539362'
+github_access_token = process.env.HUBOT_GITHUB_ACCESS_TOKEN
 github_qa_username = process.env.HUBOT_GITHUB_QA_USERNAME
 
 fogbugz_host = process.env.HUBOT_FOGBUGZ_HOST
@@ -100,10 +100,13 @@ module.exports = (robot) ->
       re = /\[.*?\]/
       ticketNum = re.exec(title)[0].replace('#','').replace('[','').replace(']','')
       payload = '{"transition": {"id":"751"}}'
+      console.log "ticketNum = ", ticketNum
       msg.
         http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticketNum}/transitions").
         headers("Authorization": "Basic Z3JhbnQ6a3dhbnphYQ==", "Content-Type": "application/json").
         post(payload) (err, res, body) ->
+          console.log "err = ", err
+          console.log "body = ", err
           response = JSON.parse body
 
   getEmoji = ->
