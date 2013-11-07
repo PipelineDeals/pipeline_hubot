@@ -107,7 +107,6 @@ module.exports = (robot) ->
         post(payload) (err, res, body) ->
           console.log "err = ", err
           console.log "body = ", err
-          response = JSON.parse body
 
   getEmoji = ->
     emojis = ["+1", "smile", "relieved", "sparkles", "star2", "heart", "notes", "ok_hand", "clap", "raised_hands", "dancer", "kiss", "100", "ship", "shipit", "beer", "high_heel", "moneybag", "zap", "sunny", "dolphin"]
