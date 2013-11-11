@@ -76,7 +76,7 @@ module.exports = (robot) ->
   devAcceptPR = (user, prNum, msg) ->
     commentOnPR(user, prNum, msg)
     assignPRtoQA(prNum, msg)
-    msg.send("The ticket has been accepted by the Devs..")
+    msg.send("The ticket has been accepted by the Devs... yup.")
 
   qAAcceptPR = (user, prNum, msg) ->
     commentOnPR("#{user} (QA)", prNum, msg)
