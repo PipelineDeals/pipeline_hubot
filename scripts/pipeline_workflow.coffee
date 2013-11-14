@@ -85,7 +85,7 @@ module.exports = (robot) ->
 
   commentOnPR = (user, prNum, msg) ->
     github_comment_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}/comments?access_token=#{github_access_token}"
-    payload = JSON.stringify({ body: "#{user} approves!  :#{getEmoji()}:" })
+    payload = JSON.stringify({ body: "#{user} approves!  :#{getGithubEmoji()}:" })
     msg.http(github_comment_api_url).post(payload)
 
   assignPRtoQA = (prNum, msg) ->
@@ -113,10 +113,12 @@ module.exports = (robot) ->
     url = "https://github.com/PipelineDeals/pipeline_deals/pull/#{prNum}"
     "<a href='#{url}'>#{prNum}</a>"
 
-  getEmoji = ->
-    emojis = ["+1", "smile", "relieved", "sparkles", "star2", "heart", "notes", "ok_hand", "clap", "raised_hands", "dancer", "kiss", "100", "ship", "shipit", "beer", "high_heel", "moneybag", "zap", "sunny", "dolphin"]
-    emojis[Math.floor(Math.random() * emojis.length)]
+  getGithubEmoji = ->
+    selectRandom ["+1", "smile", "relieved", "sparkles", "star2", "heart", "notes", "ok_hand", "clap", "raised_hands", "dancer", "kiss", "100", "ship", "shipit", "beer", "high_heel", "moneybag", "zap", "sunny", "dolphin"]
 
   getHipchatEmoji = ->
-    emojis = ["allthethings", "awthanks", "awyeah", "basket", "beer", "bunny", "cadbury", "cake", "candycorn", "caruso", "chewie", "chocobunny", "chucknorris", "coffee", "dance", "dealwithit", "hipster", "kwanzaa", "menorah", "ninja", "philosoraptor", "pbr", "present", "tree", "thumbsup", "tea", "success", "yougotitdude"]
-    emojis[Math.floor(Math.random() * emojis.length)]
+    selectRandom ["allthethings", "awthanks", "awyeah", "basket", "beer", "bunny", "cadbury", "cake", "candycorn", "caruso", "chewie", "chocobunny", "chucknorris", "coffee", "dance", "dealwithit", "hipster", "kwanzaa", "menorah", "ninja", "philosoraptor", "pbr", "present", "tree", "thumbsup", "tea", "success", "yougotitdude"]
+
+  selectRandom = (list) ->
+    list[Math.floor(Math.random() * list.length)]
+
