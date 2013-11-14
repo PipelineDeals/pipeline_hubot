@@ -102,12 +102,23 @@ module.exports = (robot) ->
       re = /\[.*?\]/
       ticketNum = re.exec(title)[0].replace('#','').replace('[','').replace(']','')
       payload = '{"transition": {"id":"751"}}'
-      console.log "ticketNum = ", ticketNum
       msg.
         http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticketNum}/transitions").
         headers("Authorization": "Basic #{jira_token}", "Content-Type": "application/json").
         post(payload) (err, res, body) ->
           console.log "err = ", err
+
+      addPrURLToTicket(msg, ticketNum, prNum)
+
+  addPrURLToTicket = (msg, ticketNum, prNum) ->
+    payload = '{"fields": {"customfield_10400": "https://github.com/xyz"}}'
+    githubUrl = "https://github.com/PipelineDeals/pipeline_deals/pull/#{prNum}"
+    payload = JSON.stringify({ fields: {"customfield_10400": githubUrl }})
+    msg.
+      http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticketNum}").
+      headers("Authorization": "Basic #{jira_token}", "Content-Type": "application/json").
+      put(payload) (err, res, body) ->
+        console.log "err = ", err
 
   getEmoji = ->
     emojis = ["+1", "smile", "relieved", "sparkles", "star2", "heart", "notes", "ok_hand", "clap", "raised_hands", "dancer", "kiss", "100", "ship", "shipit", "beer", "high_heel", "moneybag", "zap", "sunny", "dolphin"]
