@@ -105,7 +105,7 @@ module.exports = (robot) ->
       console.log "ticketNum = ", ticketNum
       msg.
         http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticketNum}/transitions").
-        headers("Authorization": "Basic Z3JhbnQ6a3dhbnphYQ==", "Content-Type": "application/json").
+        headers("Authorization": jira_token, Content-Type": "application/json").
         post(payload) (err, res, body) ->
           console.log "err = ", err
 
