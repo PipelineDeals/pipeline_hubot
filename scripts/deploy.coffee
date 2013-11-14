@@ -41,7 +41,7 @@ module.exports = (robot) ->
   commandRequest = (command, msg) ->
     msg.http(commandUrl(command)).post() (err, res, body) ->
       json = JSON.parse body
-      msg.send("Gettin' to work: #{json.message}")
+      msg.send json.message
 
   commandUrl = (command) ->
     "#{deploymanager_url}/#{command}?token=#{deploymanager_token}"
