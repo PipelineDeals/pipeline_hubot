@@ -26,19 +26,22 @@ module.exports = (robot) ->
   robot.respond /deploy( (.*))?/i, (msg) ->
     command = msg.match[2]
     if command is "status"
-      statusRequest
+      statusRequest(msg)
     else
-      commandRequest(command)
+      commandRequest(command, msg)
 
   ######################################
   # Utility functions
   ######################################
   statusRequest = (msg) ->
-    msg.http("#{deploymanager_url}/status").get() (err, res, body) ->
+    msg.http(commandUrl("status")).get() (err, res, body) ->
       json = JSON.parse body
       msg.send("Deploy status: #{json.message}")
 
-  commandRequest = (command, callback) ->
-    msg.http("#{deploymanager_url}/#{command}").post() (err, res, body) ->
+  commandRequest = (command, msg) ->
+    msg.http(commandUrl(command)).post() (err, res, body) ->
       json = JSON.parse body
       msg.send("Gettin' to work: #{json.message}")
+
+  commandUrl = (command) ->
+    "#{deploymanager_url}/#{command}?token=#{deploymanager_token}"
