@@ -76,12 +76,12 @@ module.exports = (robot) ->
   devAcceptPR = (user, prNum, msg) ->
     commentOnPR(user, prNum, msg)
     assignPRtoQA(prNum, msg)
-    msg.send("The ticket has been accepted by the Devs... yup.")
+    msg.send("#{linkToPr(prNum)} has been accepted by the devs. (#{getHipchatEmoji})")
 
   qAAcceptPR = (user, prNum, msg) ->
     commentOnPR("#{user} (QA)", prNum, msg)
     markTicketAsPeerReviewed(prNum, msg)
-    msg.send("The ticket has been accepted by QA.")
+    msg.send("#{linkToPr(prNum)} has been accepted by QA. (#{getHipchatEmoji})")
 
   commentOnPR = (user, prNum, msg) ->
     github_comment_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}/comments?access_token=#{github_access_token}"
@@ -109,6 +109,14 @@ module.exports = (robot) ->
         post(payload) (err, res, body) ->
           console.log "err = ", err
 
+  linkToPr = (prNum) ->
+    url = "https://github.com/PipelineDeals/pipeline_deals/pull/#{prNum}"
+    "<a href='#{url}'>#{prNum}</a>"
+
   getEmoji = ->
     emojis = ["+1", "smile", "relieved", "sparkles", "star2", "heart", "notes", "ok_hand", "clap", "raised_hands", "dancer", "kiss", "100", "ship", "shipit", "beer", "high_heel", "moneybag", "zap", "sunny", "dolphin"]
+    emojis[Math.floor(Math.random() * emojis.length)]
+
+  getHipchatEmoji = ->
+    emojis = ["allthethings", "awthanks", "awyeah", "basket", "beer", "bunny", "cadbury", "cake", "candycorn", "caruso", "chewie", "chocobunny", "chucknorris", "coffee", "dance", "dealwithit", "hipster", "kwanzaa", "menorah", "ninja", "philosoraptor", "pbr", "present", "tree", "thumbsup", "tea", "success", "yougotitdude"]
     emojis[Math.floor(Math.random() * emojis.length)]
