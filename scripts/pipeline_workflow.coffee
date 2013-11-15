@@ -26,16 +26,23 @@ fogbugz_token = process.env.HUBOT_FOGBUGZ_TOKEN
 
 jira_token = process.env.JIRA_TOKEN
 
+JiraPeerReviewed = 751
+JiraClosed = 781
+JiraBusinessOwnerApproved = 771
+JiraPRCustomField = "customfield_10400"
+JiraReleaseVersionCustomField = "customfield_10401"
+
+ReleaseVersion = null
+
 module.exports = (robot) ->
+
   robot.respond /pr dev accept (\d+)/i, (msg) ->
     prNum = msg.match[1]
-    user = msg.message.user.name
-    devAcceptPR(user, prNum, msg)
+    devAcceptPR(prNum, msg)
 
   robot.respond /pr qa accept (\d+)/i, (msg) ->
     prNum = msg.match[1]
-    user = msg.message.user.name
-    qAAcceptPR(user, prNum, msg)
+    qAAcceptPR(prNum, msg)
 
   robot.respond /pr deadbeats/i, (msg) ->
     parseIssues = (issues) ->
@@ -70,23 +77,54 @@ module.exports = (robot) ->
       else
         msg.send "Nice work managing those PRs!!"
 
+  robot.respond /set release version (.*)/i, (msg) ->
+    version = msg.match[1]
+    ReleaseVersion = version
+    msg.send "Ok, deploy version is #{ReleaseVersion}"
+
+  robot.respond /get release version/i, (msg) ->
+    msg.send "The release version currentl is #{ReleaseVersion}"
+
+  robot.respond /pr merge (\d+)/i, (msg) ->
+    prNum = msg.match[1]
+
+    # close the jira ticket and set the release version
+    work = (ticketNum) ->
+      setJiraTicketReleaseVersion(ticketNum, msg)
+      transitionTicket(ticketNum, JiraClosed, msg)
+    getJiraTicketFromPR(prNum, msg, work)
+
+    # put deploy version in PR and merge it
+    commentOnPR(prNum, "Deploy version: #{ReleaseVersion}", msg)
+    mergePR(prNum, msg)
+
+
+  robot.respond /business owner approve (.*)/i, (msg) ->
+    ticket = msg.match[1]
+    transitionTicket(ticket, JiraBusinessOwnerApproved, msg)
+    work = (prNum) -> commentOnPR(prNum, approveComment("#{msg.message.user.name} (Business Owner)"), msg)
+    getPrFromJiraTicket(ticket, msg, work)
+
   ######################################
   # Utility functions
   ######################################
-  devAcceptPR = (user, prNum, msg) ->
-    commentOnPR(user, prNum, msg)
+
+  devAcceptPR = (prNum, msg) ->
+    commentOnPR(prNum, approveComment(msg.message.user.name), msg)
     assignPRtoQA(prNum, msg)
     msg.send("The ticket has been accepted by the Devs... yup.")
 
-  qAAcceptPR = (user, prNum, msg) ->
-    commentOnPR("#{user} (QA)", prNum, msg)
+  qAAcceptPR = (prNum, msg) ->
+    commentOnPR(prNum, approveComment("#{msg.message.user.name} (QA)"), msg)
     markTicketAsPeerReviewed(prNum, msg)
     msg.send("The ticket has been accepted by QA.")
 
-  commentOnPR = (user, prNum, msg) ->
+  commentOnPR = (prNum, comment, msg) ->
     github_comment_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}/comments?access_token=#{github_access_token}"
-    payload = JSON.stringify({ body: "#{user} approves!  :#{getEmoji()}:" })
-    msg.http(github_comment_api_url).post(payload)
+    payload = JSON.stringify({ body: comment})
+    robot.http(github_comment_api_url).post(payload)
+
+  approveComment = (user) -> "#{user} approves!  :#{getEmoji()}:"
 
   assignPRtoQA = (prNum, msg) ->
     github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}?access_token=#{github_access_token}"
@@ -94,30 +132,64 @@ module.exports = (robot) ->
     msg.http(github_issue_api_url).post(payload) (err, res, body) ->
       response = JSON.parse body
 
-  markTicketAsPeerReviewed = (prNum, msg) ->
+  getJiraTicketFromPR = (prNum, msg, cb) ->
     github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}?access_token=#{github_access_token}"
     msg.http(github_issue_api_url).get(github_issue_api_url) (err, res, body) ->
       json = JSON.parse body
       title = json['title']
       re = /\[.*?\]/
       ticketNum = re.exec(title)[0].replace('#','').replace('[','').replace(']','')
-      payload = '{"transition": {"id":"751"}}'
-      msg.
-        http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticketNum}/transitions").
-        headers("Authorization": "Basic #{jira_token}", "Content-Type": "application/json").
-        post(payload) (err, res, body) ->
-          console.log "err = ", err
+      cb(ticketNum)
 
-      addPrURLToTicket(msg, ticketNum, prNum)
+  getPrFromJiraTicket= (ticket, msg, cb) ->
+    msg.
+      http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticket}").
+      headers("Authorization": "Basic #{jira_token}", "Content-Type": "application/json").
+      get() (err, res, body) ->
+        json = JSON.parse(body)
+        url = json.fields[JiraPRCustomField]
+        if url
+          cb(url.split('/').reverse()[0])
+        else
+          cb(null)
 
-  addPrURLToTicket = (msg, ticketNum, prNum) ->
-    payload = '{"fields": {"customfield_10400": "https://github.com/xyz"}}'
+  markTicketAsPeerReviewed = (prNum, msg) ->
+    github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}?access_token=#{github_access_token}"
+    work = (ticketNum) ->
+      transitionTicket(ticketNum, JiraPeerReviewed, msg)
+      addPrURLToTicket(ticketNum, prNum, msg)
+    getJiraTicketFromPR(prNum, msg, work)
+
+  addPrURLToTicket = (ticketNum, prNum, msg) ->
     githubUrl = "https://github.com/PipelineDeals/pipeline_deals/pull/#{prNum}"
-    payload = JSON.stringify({ fields: {"customfield_10400": githubUrl }})
+    payload = JSON.stringify({ fields: {JiraPRCustomField: githubUrl }})
     msg.
       http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticketNum}").
       headers("Authorization": "Basic #{jira_token}", "Content-Type": "application/json").
       put(payload) (err, res, body) ->
+        console.log "err = ", err
+
+  transitionTicket = (ticketNum, jiraTransitionId, msg) ->
+    payload = JSON.stringify({transition:{id: jiraTransitionId}})
+    msg.
+      http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticketNum}/transitions").
+      headers("Authorization": "Basic #{jira_token}", "Content-Type": "application/json").
+      post(payload) (err, res, body) ->
+        msg.send "Ticket #{ticketNum} has been updated."
+        console.log "err = ", err
+
+  mergePR = (prNum, msg) ->
+    github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/pulls/#{prNum}/merge?access_token=#{github_access_token}"
+    msg.http(github_issue_api_url).put(JSON.stringify({commit_message: "Merge into master"})) (err, res, body) -> console.log err
+
+  setJiraTicketReleaseVersion = (ticketNum, msg) ->
+    fields = {}
+    fields[JiraReleaseVersionCustomField] = ReleaseVersion
+    payload = {"fields": fields}
+    msg.
+      http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticketNum}").
+      headers("Authorization": "Basic #{jira_token}", "Content-Type": "application/json").
+      put(JSON.stringify(payload)) (err, res, body) ->
         console.log "err = ", err
 
   getEmoji = ->
