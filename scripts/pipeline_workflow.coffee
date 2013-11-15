@@ -83,7 +83,7 @@ module.exports = (robot) ->
     msg.send "Ok, deploy version is #{ReleaseVersion}"
 
   robot.respond /get release version/i, (msg) ->
-    msg.send "The release version currentl is #{ReleaseVersion}"
+    msg.send "The release version currently is #{ReleaseVersion}"
 
   robot.respond /pr merge (\d+)/i, (msg) ->
     prNum = msg.match[1]
