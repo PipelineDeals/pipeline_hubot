@@ -18,6 +18,7 @@
 #   brandonhilkert
 #
 
+_ = require("underscore")
 github_access_token = process.env.HUBOT_GITHUB_ACCESS_TOKEN
 github_qa_username = process.env.HUBOT_GITHUB_QA_USERNAME
 
@@ -31,6 +32,12 @@ JiraClosed = 781
 JiraBusinessOwnerApproved = 771
 JiraPRCustomField = "customfield_10400"
 JiraReleaseVersionCustomField = "customfield_10401"
+JiraDeployableStatus = 10011 # the ticket is in business owner approved atatus
+JiraBusinesOwnerApprovableStatus = 10010
+
+GithubDevApprovedLabel = "Dev peer reviewed"
+GithubQAApprovedLabel = "QA approved"
+GithubBusinessOwnerApprovedLabel = "Business owner approved"
 
 ReleaseVersion = null
 
@@ -39,10 +46,16 @@ module.exports = (robot) ->
   robot.respond /pr dev accept (\d+)/i, (msg) ->
     prNum = msg.match[1]
     devAcceptPR(prNum, msg)
+    labelPr(prNum, GithubDevApprovedLabel, msg)
 
   robot.respond /pr qa accept (\d+)/i, (msg) ->
     prNum = msg.match[1]
-    qAAcceptPR(prNum, msg)
+    ticketCanBePeerReviewed = ->
+      qAAcceptPR(prNum, msg)
+      labelPr(prNum, GithubQAApprovedLabel, msg)
+    ticketCannotBePeerReviewed = ->
+      msg.send("This ticket cannot be marked as peer reviewed.")
+    qAAcceptable(prNum, ticketCanBePeerReviewed, ticketCannotBePeerReviewed, msg)
 
   robot.respond /pr deadbeats/i, (msg) ->
     parseIssues = (issues) ->
@@ -87,23 +100,33 @@ module.exports = (robot) ->
 
   robot.respond /pr merge (\d+)/i, (msg) ->
     prNum = msg.match[1]
+    getJiraTicketFromPR prNum, msg, (ticketNum) ->
+      getTicketStatus ticketNum, msg, (status) ->
+        if status.toString() == JiraDeployableStatus.toString()
+          # close the jira ticket and set the release version
+          work = (ticketNum) ->
+            setJiraTicketReleaseVersion(ticketNum, msg)
+            transitionTicket(ticketNum, JiraClosed, msg)
+          getJiraTicketFromPR(prNum, msg, work)
 
-    # close the jira ticket and set the release version
-    work = (ticketNum) ->
-      setJiraTicketReleaseVersion(ticketNum, msg)
-      transitionTicket(ticketNum, JiraClosed, msg)
-    getJiraTicketFromPR(prNum, msg, work)
-
-    # put deploy version in PR and merge it
-    commentOnPR(prNum, "Deploy version: #{ReleaseVersion}", msg)
-    mergePR(prNum, msg)
-
+          # put deploy version in PR and merge it
+          commentOnPR(prNum, "Deploy version: #{ReleaseVersion}", msg)
+          mergePR(prNum, msg)
+          msg.send("The PR has been merged and the ticket has been updated.")
+        else
+          msg.send("This ticket is not mergeable, because the business owner has not yet approved it.")
 
   robot.respond /business owner approve (.*)/i, (msg) ->
     ticket = msg.match[1]
-    transitionTicket(ticket, JiraBusinessOwnerApproved, msg)
-    work = (prNum) -> commentOnPR(prNum, approveComment("#{msg.message.user.name} (Business Owner)"), msg)
-    getPrFromJiraTicket(ticket, msg, work)
+    getTicketStatus ticket, msg, (status) ->
+      if status.toString() == JiraBusinesOwnerApprovableStatus.toString()
+        transitionTicket(ticket, JiraBusinessOwnerApproved, msg)
+        work = (prNum) -> 
+          commentOnPR(prNum, approveComment("#{msg.message.user.name} (Business Owner)"), msg)
+          labelPr(prNum, GithubBusinessOwnerApprovedLabel, msg)
+        getPrFromJiraTicket(ticket, msg, work)
+      else
+        msg.send("This ticket cannot be approved by the business owner, as it has not been accepted by QA yet.")
 
   ######################################
   # Utility functions
@@ -114,15 +137,33 @@ module.exports = (robot) ->
     assignPRtoQA(prNum, msg)
     msg.send("The ticket has been accepted by the Devs... yup.")
 
+  qAAcceptable = (prNum, successFn, failFn, msg) ->
+    getJiraTicketFromPR prNum, msg, (ticketNum) -> ticketTransitionableTo(ticketNum, JiraPeerReviewed, successFn, failFn, msg)
+
   qAAcceptPR = (prNum, msg) ->
     commentOnPR(prNum, approveComment("#{msg.message.user.name} (QA)"), msg)
     markTicketAsPeerReviewed(prNum, msg)
     msg.send("The ticket has been accepted by QA.")
 
+  labelPr = (prNum, label, msg) ->
+    getPRLabels prNum, msg, (existingLabels) ->
+      url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}/labels?access_token=#{github_access_token}"
+      existingLabels.unshift(label)
+      msg.http(url).post(JSON.stringify(existingLabels)) (err, res, body) ->
+        console.log err
+
+  getPRLabels = (prNum, msg, cb) ->
+    url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}/labels?access_token=#{github_access_token}"
+    msg.http(url).get() (err, res, body) ->
+      existingLabels = JSON.parse body
+      console.log existingLabels
+      existingLabels = existingLabels.map (label) -> label.name
+      cb(existingLabels) if cb
+
   commentOnPR = (prNum, comment, msg) ->
     github_comment_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}/comments?access_token=#{github_access_token}"
     payload = JSON.stringify({ body: comment})
-    robot.http(github_comment_api_url).post(payload)
+    msg.http(github_comment_api_url).post(payload)
 
   approveComment = (user) -> "#{user} approves!  :#{getEmoji()}:"
 
@@ -156,13 +197,15 @@ module.exports = (robot) ->
   markTicketAsPeerReviewed = (prNum, msg) ->
     github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}?access_token=#{github_access_token}"
     work = (ticketNum) ->
-      transitionTicket(ticketNum, JiraPeerReviewed, msg)
       addPrURLToTicket(ticketNum, prNum, msg)
+      transitionTicket(ticketNum, JiraPeerReviewed, msg)
     getJiraTicketFromPR(prNum, msg, work)
 
   addPrURLToTicket = (ticketNum, prNum, msg) ->
     githubUrl = "https://github.com/PipelineDeals/pipeline_deals/pull/#{prNum}"
-    payload = JSON.stringify({ fields: {JiraPRCustomField: githubUrl }})
+    fields = {}
+    fields[JiraPRCustomField] = githubUrl
+    payload = JSON.stringify({ fields: fields})
     msg.
       http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticketNum}").
       headers("Authorization": "Basic #{jira_token}", "Content-Type": "application/json").
@@ -177,6 +220,26 @@ module.exports = (robot) ->
       post(payload) (err, res, body) ->
         msg.send "Ticket #{ticketNum} has been updated."
         console.log "err = ", err
+
+  getTicketStatus = (ticketNum, msg, cb) ->
+    msg.
+      http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticketNum}").
+      headers("Authorization": "Basic #{jira_token}", "Content-Type": "application/json").
+      get() (err, res, body) -> 
+        body = JSON.parse(body)
+        if body.fields
+          cb(body.fields.status.id)
+        else
+          cb(null)
+
+  ticketTransitionableTo = (ticketNum, ticketId, canBeFn, cannotBeFn, msg) ->
+    msg.
+      http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticketNum}/transitions").
+      headers("Authorization": "Basic #{jira_token}", "Content-Type": "application/json").
+      get() (err, res, body) ->
+        json = JSON.parse body
+        transition = _.find json.transitions, (transition) -> transition.id == ticketId.toString()
+        if transition then canBeFn() else cannotBeFn()
 
   mergePR = (prNum, msg) ->
     github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/pulls/#{prNum}/merge?access_token=#{github_access_token}"
