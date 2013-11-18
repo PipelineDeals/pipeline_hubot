@@ -181,6 +181,15 @@ module.exports = (robot) ->
   mergePR = (prNum, msg) ->
     github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/pulls/#{prNum}/merge?access_token=#{github_access_token}"
     msg.http(github_issue_api_url).put(JSON.stringify({commit_message: "Merge into master"})) (err, res, body) -> console.log err
+    deleteBranch(prNum, msg)
+
+  deleteBranch = (prNum, msg) ->
+    url  = "https://api.github.com/repos/PipelineDeals/pipeline_deals/pulls/#{prNum}?access_token=#{github_access_token}"
+    msg.http(url).get() (err, res, body) ->
+      json = JSON.parse body
+      branch = json.head.ref
+      url  = "https://api.github.com/repos/PipelineDeals/pipeline_deals/git/refs/heads/#{branch}?access_token=#{github_access_token}"
+      msg.http(url).delete() (err, res, body) -> console.log err
 
   setJiraTicketReleaseVersion = (ticketNum, msg) ->
     fields = {}
