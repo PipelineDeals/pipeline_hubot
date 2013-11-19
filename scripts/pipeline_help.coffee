@@ -7,6 +7,7 @@ module.exports = (robot) ->
       hubot business owner approve MBL-123 -- The business owner of the ticket approves the fix on stagemanager
       hubot set release version 3.5.xx     -- Sets the release version
       hubot get release version 3.5.xx     -- Sets the release version
+      hubot release                        -- Create a github release.  Will tag the repo and build release notes
       hubot pr merge 123                   -- Merge the PR into master.  Will close the jira ticket, and set its release version custom field
     """
     msg.send resp
