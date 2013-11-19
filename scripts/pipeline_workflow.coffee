@@ -102,6 +102,9 @@ module.exports = (robot) ->
     prNum = msg.match[1]
     getJiraTicketFromPR prNum, msg, (ticketNum) ->
       getTicketStatus ticketNum, msg, (status) ->
+        if status == null
+          msg.send("I could not find the jira ticket!")
+          return
         if status.toString() == JiraDeployableStatus.toString()
           # close the jira ticket and set the release version
           work = (ticketNum) ->
