@@ -268,7 +268,7 @@ module.exports = (robot) ->
         params = JSON.stringify({tag_name: ReleaseVersion, name: "Release #{ReleaseVersion}", body: issues.join("\n")})
         msg.http(url).post(params) (err, res, body) -> 
           json = JSON.parse body
-          msg.send("Release #{ReleaseVersion} created -- #{json.url}")
+          msg.send("Release #{ReleaseVersion} created -- #{json.html_url}")
 
   deleteBranch = (prNum, msg) ->
     url  = "https://api.github.com/repos/PipelineDeals/pipeline_deals/pulls/#{prNum}?access_token=#{github_access_token}"
