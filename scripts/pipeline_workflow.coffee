@@ -249,8 +249,8 @@ module.exports = (robot) ->
 
   mergePR = (prNum, msg) ->
     github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/pulls/#{prNum}/merge?access_token=#{github_access_token}"
-    msg.http(github_issue_api_url).put(JSON.stringify({commit_message: "Merge into master"})) (err, res, body) -> console.log err
-    deleteBranch(prNum, msg)
+    msg.http(github_issue_api_url).put(JSON.stringify({commit_message: "Merge into master"})) (err, res, body) ->
+      deleteBranch(prNum, msg)
 
   createGithubRelease = (msg) ->
     # get all tickets with the deploy version of ReleaseVersion
