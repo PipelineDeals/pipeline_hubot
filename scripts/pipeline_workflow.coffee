@@ -131,6 +131,9 @@ module.exports = (robot) ->
       else
         msg.send("This ticket cannot be approved by the business owner, as it has not been accepted by QA yet.")
 
+  robot.respond /release/i, (msg) ->
+    createGithubRelease(msg)
+
   ######################################
   # Utility functions
   ######################################
@@ -248,6 +251,24 @@ module.exports = (robot) ->
     github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/pulls/#{prNum}/merge?access_token=#{github_access_token}"
     msg.http(github_issue_api_url).put(JSON.stringify({commit_message: "Merge into master"})) (err, res, body) -> console.log err
     deleteBranch(prNum, msg)
+
+  createGithubRelease = (msg) ->
+    # get all tickets with the deploy version of ReleaseVersion
+    # that will be the payload for creating the release
+    # create github release with the ReleaseVersion
+    encoded = encodeURIComponent("'Release version' ~ '#{ReleaseVersion}'")
+    msg.
+      http("https://pipelinedeals.atlassian.net/rest/api/2/search?jql=#{encoded}").
+      headers("Authorization": "Basic #{jira_token}", "Content-Type": "application/json").
+      get() (err, res, body) ->
+        json = JSON.parse body
+        issues = _.map json.issues, (issue) -> "-  [[#{issue.key}](https://pipelinedeals.atlassian.net/browse/#{issue.key})] -- #{issue.fields.summary}"
+
+        url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/releases?access_token=#{github_access_token}"
+        params = JSON.stringify({tag_name: ReleaseVersion, name: "Release #{ReleaseVersion}", body: issues.join("\n")})
+        msg.http(url).post(params) (err, res, body) -> 
+          json = JSON.parse body
+          msg.send("Release #{ReleaseVersion} created -- #{json.url}")
 
   deleteBranch = (prNum, msg) ->
     url  = "https://api.github.com/repos/PipelineDeals/pipeline_deals/pulls/#{prNum}?access_token=#{github_access_token}"
