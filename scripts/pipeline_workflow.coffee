@@ -109,7 +109,7 @@ module.exports = (robot) ->
           # close the jira ticket and set the release version
           work = (ticketNum) ->
             setJiraTicketReleaseVersion(ticketNum, msg)
-            transitionTicket(ticketNum, JiraClosed, msg)
+            #transitionTicket(ticketNum, JiraClosed, msg) # not until we move to CD
           getJiraTicketFromPR(prNum, msg, work)
 
           # put deploy version in PR and merge it
