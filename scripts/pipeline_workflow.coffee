@@ -119,6 +119,12 @@ module.exports = (robot) ->
         else
           msg.send("This ticket is not mergeable, because the business owner has not yet approved it.")
 
+  robot.respond /pr force merge (\d+)/i, (msg) ->
+    prNum = msg.match[1]
+    commentOnPR(prNum, "Deploy version: #{ReleaseVersion}", msg)
+    mergePR(prNum, msg)
+    msg.send("The PR has been merged.")
+
   robot.respond /business owner approve (.*)/i, (msg) ->
     ticket = msg.match[1]
     getTicketStatus ticket, msg, (status) ->

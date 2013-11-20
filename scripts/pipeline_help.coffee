@@ -9,5 +9,6 @@ module.exports = (robot) ->
       hubot get release version 3.5.xx     -- Sets the release version
       hubot release                        -- Create a github release.  Will tag the repo and build release notes
       hubot pr merge 123                   -- Merge the PR into master.  Will close the jira ticket, and set its release version custom field
+      hubot pr force merge 123             -- Merge the PR into master.  Does nothing with jira.
     """
     msg.send resp
