@@ -131,6 +131,7 @@ module.exports = (robot) ->
       if status.toString() == JiraBusinesOwnerApprovableStatus.toString()
         transitionTicket(ticket, JiraBusinessOwnerApproved, msg)
         work = (prNum) -> 
+          return if prNum == null
           commentOnPR(prNum, approveComment("#{msg.message.user.name} (Business Owner)"), msg)
           labelPr(prNum, GithubBusinessOwnerApprovedLabel, msg)
         getPrFromJiraTicket(ticket, msg, work)
