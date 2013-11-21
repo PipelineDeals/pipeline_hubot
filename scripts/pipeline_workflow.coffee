@@ -39,14 +39,23 @@ GithubDevApprovedLabel = "Dev peer reviewed"
 GithubQAApprovedLabel = "QA approved"
 GithubBusinessOwnerApprovedLabel = "Business owner approved"
 
+GithubTestFailure = 'failure'
+GithubTestSuccess = 'success'
+GithubTestPending = 'pending'
+
 ReleaseVersion = null
 
 module.exports = (robot) ->
 
   robot.respond /pr dev accept (\d+)/i, (msg) ->
     prNum = msg.match[1]
-    devAcceptPR(prNum, msg)
-    labelPr(prNum, GithubDevApprovedLabel, msg)
+    getBranchStatus prNum, msg, (status) ->
+      switch status
+        when GithubTestFailure then msg.send "Can't accept PR, as the latest specs failed"
+        when GithubTestPending then msg.send "Whoa there partner, wait till the tests finish running!"
+        when GithubTestSuccess
+          devAcceptPR(prNum, msg)
+          labelPr(prNum, GithubDevApprovedLabel, msg)
 
   robot.respond /pr qa accept (\d+)/i, (msg) ->
     prNum = msg.match[1]
@@ -177,6 +186,14 @@ module.exports = (robot) ->
     github_comment_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}/comments?access_token=#{github_access_token}"
     payload = JSON.stringify({ body: comment})
     msg.http(github_comment_api_url).post(payload)
+
+  getBranchStatus = (prNum, msg, cb) ->
+    url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/pulls/#{prNum}?access_token=#{github_access_token}"
+    msg.http(url).get() (err, res, body) ->
+      body = JSON.parse(body)
+      msg.http("#{body.statuses_url}?access_token=#{github_access_token}").get() (err, res, body) ->
+        body = JSON.parse(body)
+        cb(body[0].state)
 
   approveComment = (user) -> "#{user} approves!  :#{getEmoji()}:"
 
