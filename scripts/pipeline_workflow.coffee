@@ -157,7 +157,7 @@ module.exports = (robot) ->
   devAcceptPR = (prNum, msg) ->
     commentOnPR(prNum, approveComment(msg.message.user.name), msg)
     assignPRtoQA(prNum, msg)
-    msg.send("#{linkToPr(prNum)} has been accepted by the devs. (#{getHipchatEmoji})")
+    msg.send("#{linkToPr(prNum)} has been accepted by the devs. (#{getHipchatEmoji()})")
 
   qAAcceptable = (prNum, successFn, failFn, msg) ->
     getJiraTicketFromPR prNum, msg, (ticketNum) -> ticketTransitionableTo(ticketNum, JiraPeerReviewed, successFn, failFn, msg)
@@ -165,7 +165,7 @@ module.exports = (robot) ->
   qAAcceptPR = (prNum, msg) ->
     commentOnPR(prNum, approveComment("#{msg.message.user.name} (QA)"), msg)
     markTicketAsPeerReviewed(prNum, msg)
-    msg.send("#{linkToPr(prNum)} has been accepted by QA. (#{getHipchatEmoji})")
+    msg.send("#{linkToPr(prNum)} has been accepted by QA. (#{getHipchatEmoji()})")
 
   labelPr = (prNum, label, msg) ->
     getPRLabels prNum, msg, (existingLabels) ->
@@ -314,7 +314,7 @@ module.exports = (robot) ->
 
   linkToPr = (prNum) ->
     url = "https://github.com/PipelineDeals/pipeline_deals/pull/#{prNum}"
-    "<a href='#{url}'>#{prNum}</a>"
+    "<a href=\"#{url}\">#{prNum}</a>"
 
   getGithubEmoji = ->
     selectRandom ["+1", "smile", "relieved", "sparkles", "star2", "heart", "notes", "ok_hand", "clap", "raised_hands", "dancer", "kiss", "100", "ship", "shipit", "beer", "high_heel", "moneybag", "zap", "sunny", "dolphin"]
