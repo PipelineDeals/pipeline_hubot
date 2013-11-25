@@ -313,8 +313,7 @@ module.exports = (robot) ->
         console.log "err = ", err
 
   linkToPr = (prNum) ->
-    url = "https://github.com/PipelineDeals/pipeline_deals/pull/#{prNum}"
-    "<a href=\"#{url}\">#{prNum}</a>"
+    "https://github.com/PipelineDeals/pipeline_deals/pull/#{prNum}"
 
   getGithubEmoji = ->
     selectRandom ["+1", "smile", "relieved", "sparkles", "star2", "heart", "notes", "ok_hand", "clap", "raised_hands", "dancer", "kiss", "100", "ship", "shipit", "beer", "high_heel", "moneybag", "zap", "sunny", "dolphin"]
