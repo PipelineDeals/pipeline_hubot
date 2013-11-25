@@ -139,7 +139,7 @@ module.exports = (robot) ->
     getTicketStatus ticket, msg, (status) ->
       if status.toString() == JiraBusinesOwnerApprovableStatus.toString()
         transitionTicket(ticket, JiraBusinessOwnerApproved, msg)
-        work = (prNum) -> 
+        work = (prNum) ->
           return if prNum == null
           commentOnPR(prNum, approveComment("#{msg.message.user.name} (Business Owner)"), msg)
           labelPr(prNum, GithubBusinessOwnerApprovedLabel, msg)
@@ -157,7 +157,7 @@ module.exports = (robot) ->
   devAcceptPR = (prNum, msg) ->
     commentOnPR(prNum, approveComment(msg.message.user.name), msg)
     assignPRtoQA(prNum, msg)
-    msg.send("The ticket has been accepted by the Devs... yup.")
+    msg.send("#{linkToPr(prNum)} has been accepted by the devs. (#{getHipchatEmoji})")
 
   qAAcceptable = (prNum, successFn, failFn, msg) ->
     getJiraTicketFromPR prNum, msg, (ticketNum) -> ticketTransitionableTo(ticketNum, JiraPeerReviewed, successFn, failFn, msg)
@@ -165,7 +165,7 @@ module.exports = (robot) ->
   qAAcceptPR = (prNum, msg) ->
     commentOnPR(prNum, approveComment("#{msg.message.user.name} (QA)"), msg)
     markTicketAsPeerReviewed(prNum, msg)
-    msg.send("The ticket has been accepted by QA.")
+    msg.send("#{linkToPr(prNum)} has been accepted by QA. (#{getHipchatEmoji})")
 
   labelPr = (prNum, label, msg) ->
     getPRLabels prNum, msg, (existingLabels) ->
@@ -255,7 +255,7 @@ module.exports = (robot) ->
     msg.
       http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticketNum}").
       headers("Authorization": "Basic #{jira_token}", "Content-Type": "application/json").
-      get() (err, res, body) -> 
+      get() (err, res, body) ->
         body = JSON.parse(body)
         if body.fields
           cb(body.fields.status.id)
@@ -290,7 +290,7 @@ module.exports = (robot) ->
 
         url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/releases?access_token=#{github_access_token}"
         params = JSON.stringify({tag_name: ReleaseVersion, name: "Release #{ReleaseVersion}", body: issues.join("\n")})
-        msg.http(url).post(params) (err, res, body) -> 
+        msg.http(url).post(params) (err, res, body) ->
           json = JSON.parse body
           msg.send("Release #{ReleaseVersion} created -- #{json.html_url}")
 
@@ -312,6 +312,16 @@ module.exports = (robot) ->
       put(JSON.stringify(payload)) (err, res, body) ->
         console.log "err = ", err
 
-  getEmoji = ->
-    emojis = ["+1", "smile", "relieved", "sparkles", "star2", "heart", "notes", "ok_hand", "clap", "raised_hands", "dancer", "kiss", "100", "ship", "shipit", "beer", "high_heel", "moneybag", "zap", "sunny", "dolphin"]
-    emojis[Math.floor(Math.random() * emojis.length)]
+  linkToPr = (prNum) ->
+    url = "https://github.com/PipelineDeals/pipeline_deals/pull/#{prNum}"
+    "<a href='#{url}'>#{prNum}</a>"
+
+  getGithubEmoji = ->
+    selectRandom ["+1", "smile", "relieved", "sparkles", "star2", "heart", "notes", "ok_hand", "clap", "raised_hands", "dancer", "kiss", "100", "ship", "shipit", "beer", "high_heel", "moneybag", "zap", "sunny", "dolphin"]
+
+  getHipchatEmoji = ->
+    selectRandom ["allthethings", "awthanks", "awyeah", "basket", "beer", "bunny", "cadbury", "cake", "candycorn", "caruso", "chewie", "chocobunny", "chucknorris", "coffee", "dance", "dealwithit", "hipster", "kwanzaa", "menorah", "ninja", "philosoraptor", "pbr", "present", "tree", "thumbsup", "tea", "success", "yougotitdude"]
+
+  selectRandom = (list) ->
+    list[Math.floor(Math.random() * list.length)]
+
