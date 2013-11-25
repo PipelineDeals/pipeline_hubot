@@ -195,7 +195,7 @@ module.exports = (robot) ->
         body = JSON.parse(body)
         cb(body[0].state)
 
-  approveComment = (user) -> "#{user} approves!  :#{getEmoji()}:"
+  approveComment = (user) -> "#{user} approves!  :#{getGithubEmoji()}:"
 
   assignPRtoQA = (prNum, msg) ->
     github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}?access_token=#{github_access_token}"
