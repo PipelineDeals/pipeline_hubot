@@ -109,6 +109,10 @@ module.exports = (robot) ->
 
   robot.respond /pr merge (\d+)/i, (msg) ->
     prNum = msg.match[1]
+    if ReleaseVersion == null
+      msg.send "Please set the release version first!  It's currently null!"
+      return
+
     getJiraTicketFromPR prNum, msg, (ticketNum) ->
       getTicketStatus ticketNum, msg, (status) ->
         if status == null
