@@ -214,7 +214,9 @@ module.exports = (robot) ->
       title = json['title']
       matches = title.match(/\[.*?\]/g)
       return cb(null) if matches == null
-      _.each matches, (ticket) -> cb(ticket)
+      _.each matches, (ticket) ->
+        ticket = ticket.replace('#','').replace('[','').replace(']','')
+        cb(ticket)
 
   getPrFromJiraTicket= (ticket, msg, cb) ->
     msg.
