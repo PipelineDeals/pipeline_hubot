@@ -212,9 +212,9 @@ module.exports = (robot) ->
     msg.http(github_issue_api_url).get(github_issue_api_url) (err, res, body) ->
       json = JSON.parse body
       title = json['title']
-      re = /\[.*?\]/
-      ticketNum = re.exec(title)[0].replace('#','').replace('[','').replace(']','')
-      cb(ticketNum)
+      matches = title.match(/\[.*?\]/g)
+      return cb(null) if matches == null
+      _.each matches, (ticket) -> cb(ticket)
 
   getPrFromJiraTicket= (ticket, msg, cb) ->
     msg.
