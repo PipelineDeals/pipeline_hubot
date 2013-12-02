@@ -101,15 +101,15 @@ module.exports = (robot) ->
 
   robot.respond /set release version (.*)/i, (msg) ->
     version = msg.match[1]
-    ReleaseVersion = version
-    msg.send "Ok, deploy version is #{ReleaseVersion}"
+    robot.brain.release_version = version
+    msg.send "Ok, deploy version is #{releaseVersion()}"
 
   robot.respond /get release version/i, (msg) ->
-    msg.send "The release version currently is #{ReleaseVersion}"
+    msg.send "The release version currently is #{releaseVersion()}"
 
   robot.respond /pr merge (\d+)/i, (msg) ->
     prNum = msg.match[1]
-    if ReleaseVersion == null
+    if releaseVersion() == null
       msg.send "Please set the release version first!  It's currently null!"
       return
 
@@ -126,7 +126,7 @@ module.exports = (robot) ->
           getJiraTicketFromPR(prNum, msg, work)
 
           # put deploy version in PR and merge it
-          commentOnPR(prNum, "Deploy version: #{ReleaseVersion}", msg)
+          commentOnPR(prNum, "Release version: #{releaseVersion()}", msg)
           mergePR(prNum, msg)
           msg.send("The PR has been merged and the ticket has been updated.")
         else
@@ -134,7 +134,7 @@ module.exports = (robot) ->
 
   robot.respond /pr force merge (\d+)/i, (msg) ->
     prNum = msg.match[1]
-    commentOnPR(prNum, "Deploy version: #{ReleaseVersion}", msg)
+    commentOnPR(prNum, "Release version: #{releaseVersion()}", msg)
     mergePR(prNum, msg)
     msg.send("The PR has been merged.")
 
@@ -286,7 +286,7 @@ module.exports = (robot) ->
     # get all tickets with the deploy version of ReleaseVersion
     # that will be the payload for creating the release
     # create github release with the ReleaseVersion
-    encoded = encodeURIComponent("'Release version' ~ '#{ReleaseVersion}'")
+    encoded = encodeURIComponent("'Release version' ~ '#{releaseVersion()}'")
     msg.
       http("https://pipelinedeals.atlassian.net/rest/api/2/search?jql=#{encoded}").
       headers("Authorization": "Basic #{jira_token}", "Content-Type": "application/json").
@@ -295,10 +295,10 @@ module.exports = (robot) ->
         issues = _.map json.issues, (issue) -> "-  [[#{issue.key}](https://pipelinedeals.atlassian.net/browse/#{issue.key})] -- #{issue.fields.summary}"
 
         url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/releases?access_token=#{github_access_token}"
-        params = JSON.stringify({tag_name: ReleaseVersion, name: "Release #{ReleaseVersion}", body: issues.join("\n")})
+        params = JSON.stringify({tag_name: releaseVersion(), name: "Release #{releaseVersion()}", body: issues.join("\n")})
         msg.http(url).post(params) (err, res, body) ->
           json = JSON.parse body
-          msg.send("Release #{ReleaseVersion} created -- #{json.html_url}")
+          msg.send("Release #{releaseVersion()} created -- #{json.html_url}")
 
   deleteBranch = (prNum, msg) ->
     url  = "https://api.github.com/repos/PipelineDeals/pipeline_deals/pulls/#{prNum}?access_token=#{github_access_token}"
@@ -310,13 +310,15 @@ module.exports = (robot) ->
 
   setJiraTicketReleaseVersion = (ticketNum, msg) ->
     fields = {}
-    fields[JiraReleaseVersionCustomField] = ReleaseVersion
+    fields[JiraReleaseVersionCustomField] = releaseVersion()
     payload = {"fields": fields}
     msg.
       http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticketNum}").
       headers("Authorization": "Basic #{jira_token}", "Content-Type": "application/json").
       put(JSON.stringify(payload)) (err, res, body) ->
         console.log "err = ", err
+
+  releaseVersion = -> robot.brain.release_version
 
   linkToPr = (prNum) ->
     "https://github.com/PipelineDeals/pipeline_deals/pull/#{prNum}"
