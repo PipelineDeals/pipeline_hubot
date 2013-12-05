@@ -109,7 +109,7 @@ module.exports = (robot) ->
 
   robot.respond /pr merge (\d+)/i, (msg) ->
     prNum = msg.match[1]
-    if releaseVersion() == null
+    if releaseVersion() == undefined
       msg.send "Please set the release version first!  It's currently null!"
       return
 
