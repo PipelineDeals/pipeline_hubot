@@ -11,8 +11,15 @@
 #   HUBOT_FOGBUGZ_TOKEN - A Fogbugz API token used to resolve open tickets
 #
 # Commands:
-#   hubot pr accept <pr number> - Accepts a PR and reassigns to QA
+#   hubot pr dev accept <pr number> - Accepts a PR and reassigns to QA
+#   hubot pr qa accept <pr number> - QA accepts pr
+#   hubot business owner approve <jira ticket> - Business owner approve a ticket
+#   hubot pr merge <pr number> - Merge a PR and update the jira ticket
+#   hubot set release version - Set the release version
+#   hubot get release version <versionNum> - Get the release version
 #   hubot pr merge <pr number> - Merges a PR
+#   hubot github release - Tag the release in github, write release notes
+#   hubot close released tickets - Close out tickets that have the current release num
 #
 # Author:
 #   brandonhilkert
@@ -154,8 +161,11 @@ module.exports = (robot) ->
       else
         msg.send("This ticket cannot be approved by the business owner, as it has not been accepted by QA yet.")
 
-  robot.respond /release/i, (msg) ->
+  robot.respond /github release/i, (msg) ->
     createGithubRelease(msg)
+
+  robot.respond /close released tickets/i, (msg) ->
+    closeReleasedTickets(msg)
 
   ######################################
   # Utility functions
@@ -302,6 +312,15 @@ module.exports = (robot) ->
         msg.http(url).post(params) (err, res, body) ->
           json = JSON.parse body
           msg.send("Release #{releaseVersion()} created -- #{json.html_url}")
+
+  closeReleasedTickets = (msg) ->
+    encoded = encodeURIComponent("'Release version' ~ '#{releaseVersion()}'")
+    msg.
+      http("https://pipelinedeals.atlassian.net/rest/api/2/search?jql=#{encoded}").
+      headers("Authorization": "Basic #{jira_token}", "Content-Type": "application/json").
+      get() (err, res, body) ->
+        json = JSON.parse body
+        _.each json.issues, (issue) -> transitionTicket(issue.key, JiraClosed, msg )
 
   deleteBranch = (prNum, msg) ->
     url  = "https://api.github.com/repos/PipelineDeals/pipeline_deals/pulls/#{prNum}?access_token=#{github_access_token}"
