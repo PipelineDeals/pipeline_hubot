@@ -141,6 +141,9 @@ module.exports = (robot) ->
   robot.respond /business owner approve (.*)/i, (msg) ->
     ticket = msg.match[1]
     getTicketStatus ticket, msg, (status) ->
+      if status == null
+        msg.send("I could not find the jira ticket!")
+        return
       if status.toString() == JiraBusinesOwnerApprovableStatus.toString()
         transitionTicket(ticket, JiraBusinessOwnerApproved, msg)
         work = (prNum) ->
