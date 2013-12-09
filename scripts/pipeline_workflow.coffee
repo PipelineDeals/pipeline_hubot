@@ -211,7 +211,7 @@ module.exports = (robot) ->
       body = JSON.parse(body)
       msg.http("#{body.statuses_url}?access_token=#{github_access_token}").get() (err, res, body) ->
         body = JSON.parse(body)
-        return null if body == undefined
+        return null if body[0] == undefined
         cb(body[0].state)
 
   approveComment = (user) -> "#{user} approves!  :#{getGithubEmoji()}:"
