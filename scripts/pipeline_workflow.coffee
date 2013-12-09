@@ -60,6 +60,7 @@ module.exports = (robot) ->
       switch status
         when GithubTestFailure then msg.send "Can't accept PR, as the latest specs failed"
         when GithubTestPending then msg.send "Whoa there partner, wait till the tests finish running!"
+        when null then msg.send "Looks like things are backed up.  Please wait until circleci runs on this branch."
         when GithubTestSuccess
           devAcceptPR(prNum, msg)
           labelPr(prNum, GithubDevApprovedLabel, msg)
@@ -210,6 +211,7 @@ module.exports = (robot) ->
       body = JSON.parse(body)
       msg.http("#{body.statuses_url}?access_token=#{github_access_token}").get() (err, res, body) ->
         body = JSON.parse(body)
+        return null if body == undefined
         cb(body[0].state)
 
   approveComment = (user) -> "#{user} approves!  :#{getGithubEmoji()}:"
