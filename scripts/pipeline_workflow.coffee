@@ -146,7 +146,10 @@ module.exports = (robot) ->
     mergePR(prNum, msg)
     msg.send("The PR has been merged.")
 
-  robot.respond /business owner approve (.*)/i, (msg) ->
+  robot.respond /boa (.*)/i, (msg) -> businessOwnerApprove(msg)
+  robot.respond /business owner approve (.*)/i, (msg) -> businessOwnerApprove(msg)
+
+  businessOwnerApprove = (msg ->)
     ticket = msg.match[1]
     getTicketStatus ticket, msg, (status) ->
       if status == null
