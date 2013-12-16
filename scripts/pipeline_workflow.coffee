@@ -146,11 +146,15 @@ module.exports = (robot) ->
     mergePR(prNum, msg)
     msg.send("The PR has been merged.")
 
-  robot.respond /boa (.*)/i, (msg) -> businessOwnerApprove(msg)
-  robot.respond /business owner approve (.*)/i, (msg) -> businessOwnerApprove(msg)
-
-  businessOwnerApprove = (msg) ->
+  robot.respond /boa (.*)/i, (msg) -> 
     ticket = msg.match[1]
+    businessOwnerApprove(ticket, msg)
+
+  robot.respond /business owner approve (.*)/i, (msg) ->
+    ticket = msg.match[1]
+    businessOwnerApprove(ticket, msg)
+
+  businessOwnerApprove = (ticket, msg) ->
     getTicketStatus ticket, msg, (status) ->
       if status == null
         msg.send("I could not find the jira ticket!")
