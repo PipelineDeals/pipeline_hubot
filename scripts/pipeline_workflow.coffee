@@ -109,7 +109,7 @@ module.exports = (robot) ->
 
   robot.respond /set release version (.*)/i, (msg) ->
     version = msg.match[1]
-    robot.brain.release_version = version
+    robot.brain.set('releaseVersion',version)
     msg.send "Ok, deploy version is #{releaseVersion()}"
 
   robot.respond /get release version/i, (msg) ->
@@ -352,7 +352,7 @@ module.exports = (robot) ->
       put(JSON.stringify(payload)) (err, res, body) ->
         console.log "err = ", err
 
-  releaseVersion = -> robot.brain.release_version
+  releaseVersion = -> robot.brain.get('releaseVersion')
 
   linkToPr = (prNum) ->
     "https://github.com/PipelineDeals/pipeline_deals/pull/#{prNum}"
