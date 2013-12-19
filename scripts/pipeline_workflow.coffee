@@ -146,6 +146,10 @@ module.exports = (robot) ->
     mergePR(prNum, msg)
     msg.send("The PR has been merged.")
 
+  robot.respond /boa constrictor/i, (msg) ->
+    msg.send "ITS SNAKEY TIME!!"
+    msg.send "hubot image me snakes"
+
   robot.respond /boa (.*)/i, (msg) -> 
     ticket = msg.match[1]
     businessOwnerApprove(ticket, msg)
