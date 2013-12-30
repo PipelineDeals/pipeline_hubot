@@ -15,8 +15,6 @@
 #   hubot pr qa accept <pr number> - QA accepts pr
 #   hubot business owner approve <jira ticket> - Business owner approve a ticket
 #   hubot pr merge <pr number> - Merge a PR and update the jira ticket
-#   hubot set release version - Set the release version
-#   hubot get release version <versionNum> - Get the release version
 #   hubot pr merge <pr number> - Merges a PR
 #   hubot github release - Tag the release in github, write release notes
 #   hubot close released tickets - Close out tickets that have the current release num
@@ -106,14 +104,6 @@ module.exports = (robot) ->
         msg.send "That's a lot of issues, and a lot of deadbeats.  Get your act together, fools!"
       else
         msg.send "Nice work managing those PRs!!"
-
-  robot.respond /set release version (.*)/i, (msg) ->
-    version = msg.match[1]
-    robot.brain.set('releaseVersion',version)
-    msg.send "Ok, deploy version is #{releaseVersion()}"
-
-  robot.respond /get release version/i, (msg) ->
-    msg.send "The release version currently is #{releaseVersion()}"
 
   robot.respond /pr merge (\d+)/i, (msg) ->
     prNum = msg.match[1]
