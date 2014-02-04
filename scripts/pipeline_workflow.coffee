@@ -69,8 +69,8 @@ module.exports = (robot) ->
       msg.send "Please set the release version first!  It's currently null!"
       return
 
-    setJiraTicketReleaseVersion(ticketNum, msg)
     getJiraTicketFromPR prNum, msg, (ticketNum) ->
+      setJiraTicketReleaseVersion(ticketNum, msg)
       commentOnPR(prNum, "Release version: #{releaseVersion()}", msg)
       mergePR(prNum, msg)
 
