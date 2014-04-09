@@ -104,7 +104,7 @@ module.exports = (robot) ->
       else
         msg.send("This ticket cannot be approved by the business owner, as it has not been accepted by QA yet.")
 
-  robot.respond /deploy reset/i, (msg) ->
+  robot.respond /reset deploys/i, (msg) ->
     createGithubRelease(msg)
     closeReleasedTickets(msg)
     sendMsg = -> msg.send "hubot release version bump minor"
