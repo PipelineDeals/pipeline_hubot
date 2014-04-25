@@ -70,7 +70,7 @@ module.exports = (robot) ->
 
     getJiraTicketFromPR prNum, msg, (ticketNum) ->
       setJiraTicketReleaseVersion(ticketNum, msg)
-      getReleaseVersion (version) ->
+      getReleaseVersion msg, (version) ->
         commentOnPR(prNum, "Release version: #{version}", msg)
         mergePR(prNum, msg)
 
@@ -249,7 +249,7 @@ module.exports = (robot) ->
 
   setJiraTicketReleaseVersion = (ticketNum, msg) ->
     fields = {}
-    getReleaseVersion (version) ->
+    getReleaseVersion msg, (version) ->
       fields[JiraReleaseVersionCustomField] = version
       payload = {"fields": fields}
       msg.
