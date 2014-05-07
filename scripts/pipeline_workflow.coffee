@@ -256,7 +256,9 @@ module.exports = (robot) ->
         http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticketNum}").
         headers("Authorization": "Basic #{jira_token}", "Content-Type": "application/json").
         put(JSON.stringify(payload)) (err, res, body) ->
-          console.log "err = ", err
+          console.log "release version err = ", err
+          console.log "release version body = ", body
+          console.log "release version res = ", res
 
   getReleaseVersion = (msg, cb) ->
     msg.http("#{deploymanager_url}/version?token=#{deploymanager_token}").get() (err, res, body) ->
