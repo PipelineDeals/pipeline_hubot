@@ -250,7 +250,7 @@ module.exports = (robot) ->
   setJiraTicketReleaseVersion = (ticketNum, msg) ->
     fields = {}
     getReleaseVersion msg, (version) ->
-      fields[JiraReleaseVersionCustomField] = version
+      fields[JiraReleaseVersionCustomField] = version.toString()
       payload = {"fields": fields}
       msg.
         http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticketNum}").
