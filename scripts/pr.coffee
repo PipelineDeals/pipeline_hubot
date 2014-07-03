@@ -45,5 +45,7 @@ class PrLinker
 
 module.exports = (robot) ->
   robot.hear /PR(\d+)/i, (msg) ->
-    linker = new PrLinker(robot, msg, msg.match[1])
-    linker.run()
+    for substr of msg.match(/PR#?\d+/g)
+      pr_number = substr.match(/PR#?(\d+)/)[1]
+      linker = new PrLinker(robot, msg, pr_number)
+      linker.run()
