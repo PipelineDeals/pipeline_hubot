@@ -54,7 +54,7 @@ ReleaseVersion = null
 
 module.exports = (robot) ->
 
-  robot.respond /pr qa accept (\d+)/i, (msg) ->
+  robot.respond /pr dev accept (\d+)/i, (msg) ->
     prNum = msg.match[1]
     getBranchStatus prNum, msg, (status) ->
       switch status
@@ -62,24 +62,50 @@ module.exports = (robot) ->
         when GithubTestPending then msg.send "Whoa there partner, wait till the tests finish running!"
         when null then msg.send "Looks like things are backed up.  Please wait until circleci runs on this branch."
         when GithubTestSuccess
-          qAAcceptPR(prNum, msg)
-          labelPr(prNum, GithubQAApprovedLabel, msg)
+          devAcceptPR(prNum, msg)
+          labelPr(prNum, GithubDevApprovedLabel, msg)
+
+  robot.respond /pr qa accept (\d+)/i, (msg) ->
+    prNum = msg.match[1]
+    ticketCanBePeerReviewed = ->
+      qAAcceptPR(prNum, msg)
+      labelPr(prNum, GithubQAApprovedLabel, msg)
+    ticketCannotBePeerReviewed = ->
+      msg.send("This ticket cannot be marked as peer reviewed.")
+    qAAcceptable(prNum, ticketCanBePeerReviewed, ticketCannotBePeerReviewed, msg)
 
   robot.respond /pr merge (\d+)/i, (msg) ->
     prNum = msg.match[1]
 
     getJiraTicketFromPR prNum, msg, (ticketNum) ->
-      setJiraTicketReleaseVersion(ticketNum, msg)
-      getReleaseVersion msg, (version) ->
-        commentOnPR(prNum, "Release version: #{version}", msg)
-        mergePR(prNum, msg)
+      getTicketStatus ticketNum, msg, (status) ->
+        if status == null
+          msg.send("I could not find the jira ticket!")
+          return
+        if status.toString() == JiraDeployableStatus.toString()
+          # close the jira ticket and set the release version
+          work = (ticketNum) ->
+            setJiraTicketReleaseVersion(ticketNum, msg)
+            #transitionTicket(ticketNum, JiraClosed, msg) # not until we move to CD
+          getJiraTicketFromPR(prNum, msg, work)
+
+          # put deploy version in PR and merge it
+          commentOnPR(prNum, "Release version: #{releaseVersion()}", msg)
+          mergePR(prNum, msg)
+          msg.send("The PR has been merged and the ticket has been updated.")
+        else
+          msg.send("This ticket is not mergeable, because the business owner has not yet approved it.")
+
+  robot.respond /pr force merge (\d+)/i, (msg) ->
+    prNum = msg.match[1]
+    commentOnPR(prNum, "Release version: #{releaseVersion()}", msg)
+    mergePR(prNum, msg)
+    msg.send("The PR has been merged.")
+    msg.send("I like a man who takes charge!")
 
   robot.respond /boa constrictor/i, (msg) ->
     msg.send "ITS SNAKEY TIME!!"
     msg.send "hubot image me snakes"
-
-  robot.respond /scrum masterbator/i, (msg) ->
-    msg.send "http://mygaming.co.za/news/wp-content/uploads/crazy_eyes_151670133.jpg"
 
   robot.respond /boa (.*)/i, (msg) -> 
     ticket = msg.match[1]
@@ -107,6 +133,7 @@ module.exports = (robot) ->
   robot.respond /get release version/i, (msg) ->
     getReleaseVersion msg, (version) ->
       msg.send("version is #{version}")
+
   ######################################
   # Utility functions
   ######################################
@@ -121,6 +148,7 @@ module.exports = (robot) ->
 
   qAAcceptPR = (prNum, msg) ->
     commentOnPR(prNum, approveComment("#{msg.message.user.name} (QA)"), msg)
+    markTicketAsPeerReviewed(prNum, msg)
     msg.send("#{linkToPr(prNum)} has been accepted by QA. (#{getHipchatEmoji()})")
 
   labelPr = (prNum, label, msg) ->
@@ -235,7 +263,6 @@ module.exports = (robot) ->
     msg.http(github_issue_api_url).put(JSON.stringify({commit_message: "Merge into master"})) (err, res, body) ->
       if JSON.parse(body).merged == true
         deleteBranch(prNum, msg)
-        msg.send("The PR has been merged and the ticket has been updated.")
       else
         msg.send "The PR was not merged for some reason.  The message I got was #{JSON.parse(body).message}"
 
