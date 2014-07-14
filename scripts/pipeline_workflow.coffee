@@ -71,7 +71,9 @@ module.exports = (robot) ->
       qAAcceptPR(prNum, msg)
       labelPr(prNum, GithubQAApprovedLabel, msg)
     ticketCannotBePeerReviewed = ->
-      msg.send("This ticket cannot be marked as peer reviewed.")
+      msg.send("I couldn't update the jira ticket, because the ticket's state cannot transition to peer reviewed.  That means one of the following:  1) The ticket is already in the peer reviewed state, 2) It is not marked as resolved, 3) it is marked as closed or deployed.  However, I will update the github PR.");
+      qAAcceptPR(prNum, msg)
+      labelPr(prNum, GithubQAApprovedLabel, msg)
     qAAcceptable(prNum, ticketCanBePeerReviewed, ticketCannotBePeerReviewed, msg)
 
   robot.respond /pr merge (\d+)/i, (msg) ->
