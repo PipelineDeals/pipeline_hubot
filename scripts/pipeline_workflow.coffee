@@ -68,8 +68,14 @@ module.exports = (robot) ->
   robot.respond /pr qa accept (\d+)/i, (msg) ->
     prNum = msg.match[1]
     ticketCanBePeerReviewed = ->
-      qAAcceptPR(prNum, msg)
-      labelPr(prNum, GithubQAApprovedLabel, msg)
+      getBranchStatus prNum, msg, (status) ->
+        switch status
+          when GithubTestFailure then msg.send "Can't accept PR, as the latest specs failed"
+          when GithubTestPending then msg.send "Whoa there partner, wait till the tests finish running!"
+          when null then msg.send "Looks like things are backed up.  Please wait until circleci runs on this branch."
+          when GithubTestSuccess
+            qAAcceptPR(prNum, msg)
+            labelPr(prNum, GithubQAApprovedLabel, msg)
     ticketCannotBePeerReviewed = ->
       msg.send("I couldn't update the jira ticket, because the ticket's state cannot transition to peer reviewed.  That means one of the following:  1) The ticket is already in the peer reviewed state, 2) It is not marked as resolved, 3) it is marked as closed or deployed.  However, I will update the github PR.");
       qAAcceptPR(prNum, msg)
