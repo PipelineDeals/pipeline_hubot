@@ -85,7 +85,7 @@ module.exports = (robot) ->
   robot.respond /pr merge (\d+)/i, (msg) ->
     prNum = msg.match[1]
 
-    getDeployManagerStatus (status) ->
+    getDeployManagerStatus msg, (status) ->
       if status != 'ready'
         msg.send("No merging until the deploy has been cleaned up!");
       else
