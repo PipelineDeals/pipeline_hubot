@@ -85,25 +85,29 @@ module.exports = (robot) ->
   robot.respond /pr merge (\d+)/i, (msg) ->
     prNum = msg.match[1]
 
-    getJiraTicketFromPR prNum, msg, (ticketNum) ->
-      getTicketStatus ticketNum, msg, (status) ->
-        if status == null
-          msg.send("I could not find the jira ticket!")
-          return
-        if status.toString() == JiraDeployableStatus.toString()
-          # close the jira ticket and set the release version
-          work = (ticketNum) ->
-            setJiraTicketReleaseVersion(ticketNum, msg)
-            #transitionTicket(ticketNum, JiraClosed, msg) # not until we move to CD
-          getJiraTicketFromPR(prNum, msg, work)
+    getDeployManagerStatus (status) ->
+      if status != 'ready'
+        msg.send("No merging until the deploy has been cleaned up!");
+      else
+        getJiraTicketFromPR prNum, msg, (ticketNum) ->
+          getTicketStatus ticketNum, msg, (status) ->
+            if status == null
+              msg.send("I could not find the jira ticket!")
+              return
+            if status.toString() == JiraDeployableStatus.toString()
+              # close the jira ticket and set the release version
+              work = (ticketNum) ->
+                setJiraTicketReleaseVersion(ticketNum, msg)
+                #transitionTicket(ticketNum, JiraClosed, msg) # not until we move to CD
+              getJiraTicketFromPR(prNum, msg, work)
 
-          # put deploy version in PR and merge it
-          getReleaseVersion msg, (version) ->
-            commentOnPR(prNum, "Release version: #{version}", msg)
-            mergePR(prNum, msg)
-            msg.send("The PR has been merged and the ticket has been updated.")
-        else
-          msg.send("This ticket is not mergeable, because the business owner has not yet approved it.")
+              # put deploy version in PR and merge it
+              getReleaseVersion msg, (version) ->
+                commentOnPR(prNum, "Release version: #{version}", msg)
+                mergePR(prNum, msg)
+                msg.send("The PR has been merged and the ticket has been updated.")
+            else
+              msg.send("This ticket is not mergeable, because the business owner has not yet approved it.")
 
   robot.respond /pr force merge (\d+)/i, (msg) ->
     prNum = msg.match[1]
@@ -300,6 +304,10 @@ module.exports = (robot) ->
   getReleaseVersion = (msg, cb) ->
     msg.http("#{deploymanager_url}/version?token=#{deploymanager_token}").get() (err, res, body) ->
       cb(JSON.parse(body).version)
+
+  getDeployManagerStatus= (msg, cb) ->
+    msg.http("#{deploymanager_url}/version?token=#{deploymanager_token}").get() (err, res, body) ->
+      cb(JSON.parse(body).message)
 
   linkToPr = (prNum) ->
     "https://github.com/PipelineDeals/pipeline_deals/pull/#{prNum}"
