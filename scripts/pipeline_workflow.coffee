@@ -92,18 +92,20 @@ module.exports = (robot) ->
           getJiraTicketFromPR(prNum, msg, work)
 
           # put deploy version in PR and merge it
-          commentOnPR(prNum, "Release version: #{releaseVersion()}", msg)
-          mergePR(prNum, msg)
-          msg.send("The PR has been merged and the ticket has been updated.")
+          getReleaseVersion msg, (version) ->
+            commentOnPR(prNum, "Release version: #{version}", msg)
+            mergePR(prNum, msg)
+            msg.send("The PR has been merged and the ticket has been updated.")
         else
           msg.send("This ticket is not mergeable, because the business owner has not yet approved it.")
 
   robot.respond /pr force merge (\d+)/i, (msg) ->
     prNum = msg.match[1]
-    commentOnPR(prNum, "Release version: #{releaseVersion()}", msg)
-    mergePR(prNum, msg)
-    msg.send("The PR has been merged.")
-    msg.send("I like a man who takes charge!")
+    getReleaseVersion msg, (version) ->
+      commentOnPR(prNum, "Release version: #{version}", msg)
+      mergePR(prNum, msg)
+      msg.send("The PR has been merged.")
+      msg.send("I like a man who takes charge!")
 
   robot.respond /boa constrictor/i, (msg) ->
     msg.send "ITS SNAKEY TIME!!"
