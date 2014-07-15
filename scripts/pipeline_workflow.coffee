@@ -82,6 +82,10 @@ module.exports = (robot) ->
       labelPr(prNum, GithubQAApprovedLabel, msg)
     qAAcceptable(prNum, ticketCanBePeerReviewed, ticketCannotBePeerReviewed, msg)
 
+  robot.respond /get deploymanager status/i, (msg) ->
+    getDeployManagerStatus msg, (status) ->
+      msg.send("status = ", status);
+
   robot.respond /pr merge (\d+)/i, (msg) ->
     prNum = msg.match[1]
 
@@ -306,7 +310,7 @@ module.exports = (robot) ->
       cb(JSON.parse(body).version)
 
   getDeployManagerStatus= (msg, cb) ->
-    msg.http("#{deploymanager_url}/version?token=#{deploymanager_token}").get() (err, res, body) ->
+    msg.http("#{deploymanager_url}/api/status?token=#{deploymanager_token}").get() (err, res, body) ->
       cb(JSON.parse(body).message)
 
   linkToPr = (prNum) ->
