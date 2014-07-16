@@ -192,12 +192,16 @@ module.exports = (robot) ->
 
   getBranchStatus = (prNum, msg, cb) ->
     url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/pulls/#{prNum}?access_token=#{github_access_token}"
+    console.log("URL is #{url}")
     msg.http(url).get() (err, res, body) ->
       body = JSON.parse(body)
       msg.http("#{body.statuses_url}?access_token=#{github_access_token}").get() (err, res, body) ->
         body = JSON.parse(body)
-        return null if body[0] == undefined
-        cb(body[0].state)
+
+        if body[0] == undefined or body[0] == []
+          cb(null)
+        else
+          cb(body[0].state)
 
   approveComment = (user) -> "#{user} approves!  :#{getGithubEmoji()}:"
 
