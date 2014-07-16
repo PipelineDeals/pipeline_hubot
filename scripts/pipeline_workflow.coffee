@@ -69,6 +69,7 @@ module.exports = (robot) ->
     prNum = msg.match[1]
     ticketCanBePeerReviewed = ->
       getBranchStatus prNum, msg, (status) ->
+        console.log("Status is ", status)
         switch status
           when GithubTestFailure then msg.send "Can't accept PR, as the latest specs failed"
           when GithubTestPending then msg.send "Whoa there partner, wait till the tests finish running!"
