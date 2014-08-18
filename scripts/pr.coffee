@@ -23,27 +23,30 @@ class PrLinker
   githubApiUrl:      'https://api.github.com/repos'
   githubRepo:        'PipelineDeals/pipeline_deals'
 
-  constructor: (@robot, @msg, @prNum) ->
+  constructor: (@robot, @msg) ->
 
-  run: ->
-    @robot.http(@githubPrUrl()).get() (err, res, body) =>
+  run: (prNum) ->
+    @robot.http(@githubPrUrl(prNum)).get() (err, res, body) =>
       if res.statusCode == 200
         @handleSuccess(body)
       else
-        @handleFailure()
+        @handleFailure(prNum)
 
-  githubPrUrl: ->
-    "#{@githubApiUrl}/#{@githubRepo}/pulls/#{@prNum}?access_token=#{@githubAccessToken}"
+  githubPrUrl: (prNum) ->
+    "#{@githubApiUrl}/#{@githubRepo}/pulls/#{prNum}?access_token=#{@githubAccessToken}"
 
   handleSuccess: (body) ->
     pr = JSON.parse body
     @msg.send "PR ##{pr.number}: #{pr.title}"
     @msg.send pr.html_url
 
-  handleFailure: ->
-    @msg.send "Couldn't find a PR ##{@prNum}"
+  handleFailure: (prNum) ->
+    @msg.send "Couldn't find a PR ##{prNum}"
 
 module.exports = (robot) ->
-  robot.hear /PR(\d+)/i, (msg) ->
-    linker = new PrLinker(robot, msg, msg.match[1])
-    linker.run()
+  robot.hear /(.*PR#?\d+.*)/i, (msg) ->
+    linker = new PrLinker(robot, msg)
+    line = msg.match[1]
+    for substr in line.match(/PR#?\d+/gi)
+      pr_number = substr.match(/PR#?(\d+)/i)[1]
+      linker.run(pr_number)
