@@ -8,17 +8,18 @@
 #   DEPLOYMANAGER_TOKEN - An access token for PLD deploy manager
 #
 # Commands:
-#   hubot deploy status - Responds with the deploy status
-#   hubot deploy build - Creates the servers for a deploy
-#   hubot deploy update - Updates the built deploy servers
-#   hubot deploy deploy - Sends the deploy out the door
-#   hubot deploy rollback - Creates the servers for a build
-#   hubot deploy cleanup - Creates the servers for a build
+#   hubot deploy status - Responds with the deploy status of each app
+#   hubot deploy pld:status - Responds with the deploy status
+#   hubot deploy pld:build - Creates the servers for a deploy
+#   hubot deploy pld:deploy - Sends the deploy out the door
+#   hubot deploy pld:rollback - Creates the servers for a build
+#   hubot deploy pld:cleanup - Creates the servers for a build
 #
 # Author:
 #   brandonhilkert
 #
 
+_ = require("underscore")
 deploymanager_token = process.env.DEPLOYMANAGER_TOKEN
 deploymanager_url  = "http://deploymanager.pipelinedeals.com/api"
 
@@ -36,8 +37,8 @@ module.exports = (robot) ->
   statusRequest = (msg) ->
     msg.http(commandUrl("status")).get() (err, res, body) ->
       json = JSON.parse body
-      Object.keys(json).forEach (key) ->
-        msg.send "#{json[key]}"
+      _.each obj, (value, key) ->
+        msg.send "#{key}: #{value}"
 
   commandRequest = (command, msg) ->
     msg.http(commandUrl(command)).post() (err, res, body) ->
