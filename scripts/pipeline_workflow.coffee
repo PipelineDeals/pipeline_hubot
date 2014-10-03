@@ -316,7 +316,7 @@ module.exports = (robot) ->
 
   getDeployManagerStatus= (msg, cb) ->
     msg.http("#{deploymanager_url}/api/status?token=#{deploymanager_token}").get() (err, res, body) ->
-      cb(JSON.parse(body).message)
+      cb(JSON.parse(body).message.pld)
 
   linkToPr = (prNum) ->
     "https://github.com/PipelineDeals/pipeline_deals/pull/#{prNum}"
