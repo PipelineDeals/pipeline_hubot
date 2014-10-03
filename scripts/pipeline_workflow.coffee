@@ -91,8 +91,8 @@ module.exports = (robot) ->
     prNum = msg.match[1]
 
     getDeployManagerStatus msg, (status) ->
-      if status != 'ready'
-        msg.send("No merging until the deploy has been cleaned up!");
+      if status != 'pld status: ready'
+        msg.send("No merging until deploy state is 'ready'");
       else
         getJiraTicketFromPR prNum, msg, (ticketNum) ->
           getTicketStatus ticketNum, msg, (status) ->
@@ -126,7 +126,7 @@ module.exports = (robot) ->
     msg.send "ITS SNAKEY TIME!!"
     msg.send "hubot image me snakes"
 
-  robot.respond /boa (.*)/i, (msg) -> 
+  robot.respond /boa (.*)/i, (msg) ->
     ticket = msg.match[1]
     businessOwnerApprove(ticket, msg)
 
@@ -315,7 +315,7 @@ module.exports = (robot) ->
       cb(JSON.parse(body).version)
 
   getDeployManagerStatus= (msg, cb) ->
-    msg.http("#{deploymanager_url}/api/status?token=#{deploymanager_token}").get() (err, res, body) ->
+    msg.http("#{deploymanager_url}/api/pld:status?token=#{deploymanager_token}").get() (err, res, body) ->
       cb(JSON.parse(body).message)
 
   linkToPr = (prNum) ->

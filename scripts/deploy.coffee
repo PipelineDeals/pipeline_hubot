@@ -36,7 +36,8 @@ module.exports = (robot) ->
   statusRequest = (msg) ->
     msg.http(commandUrl("status")).get() (err, res, body) ->
       json = JSON.parse body
-      msg.send("#{json.message}")
+      Object.keys(json).forEach (key) ->
+        msg.send "#{json[key]}"
 
   commandRequest = (command, msg) ->
     msg.http(commandUrl(command)).post() (err, res, body) ->
