@@ -91,7 +91,7 @@ module.exports = (robot) ->
     prNum = msg.match[1]
 
     getDeployManagerStatus msg, (status) ->
-      if status != 'pld status: ready'
+      if status != 'ready'
         msg.send("No merging until deploy state is 'ready'");
       else
         getJiraTicketFromPR prNum, msg, (ticketNum) ->
@@ -315,7 +315,7 @@ module.exports = (robot) ->
       cb(JSON.parse(body).version)
 
   getDeployManagerStatus= (msg, cb) ->
-    msg.http("#{deploymanager_url}/api/pld:status?token=#{deploymanager_token}").get() (err, res, body) ->
+    msg.http("#{deploymanager_url}/api/status?token=#{deploymanager_token}").get() (err, res, body) ->
       cb(JSON.parse(body).message.pld)
 
   linkToPr = (prNum) ->
