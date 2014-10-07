@@ -3,20 +3,11 @@
 #
 # Commands:
 #   hubot image me <query> - The Original. Queries Google Images for <query> and returns a random top result.
-#   hubot jazz hands - Query for jazz hand images and respond with Google Hangout URL.
 #   hubot animate me <query> - The same thing as `image me`, except adds a few parameters to try to return an animated GIF instead.
 #   hubot mustache me <url> - Adds a mustache to the specified URL.
 #   hubot mustache me <query> - Searches Google Images for the specified query and mustaches it.
 
 module.exports = (robot) ->
-  robot.respond /jazz hands/i, (msg) ->
-    if process.env.HUBOT_HANGOUT_URL
-      imageMe msg, 'jazz hands', true, (url) ->
-        msg.send url
-      msg.send process.env.HUBOT_HANGOUT_URL
-    else
-      msg.send 'Environment variable HUBOT_HANGOUT_URL has not been set. Add EXPORT HUBOT_HANGOUT_URL="..." to your Procfile.'
-
   robot.respond /(image|img)( me)? (.*)/i, (msg) ->
     imageMe msg, msg.match[3], (url) ->
       msg.send url
@@ -26,15 +17,15 @@ module.exports = (robot) ->
       msg.send url
 
   robot.respond /(?:mo?u)?sta(?:s|c)he?(?: me)? (.*)/i, (msg) ->
-    type = Math.floor(Math.random() * 3)
+    type = Math.floor(Math.random() * 6)
     mustachify = "http://mustachify.me/#{type}?src="
     imagery = msg.match[1]
 
     if imagery.match /^https?:\/\//i
-      msg.send "#{mustachify}#{imagery}"
+      msg.send "#{mustachify}#{encodeURIComponent imagery}"
     else
       imageMe msg, imagery, false, true, (url) ->
-        msg.send "#{mustachify}#{url}"
+        msg.send "#{mustachify}#{encodeURIComponent url}"
 
 imageMe = (msg, query, animated, faces, cb) ->
   cb = animated if typeof animated == 'function'
@@ -48,6 +39,12 @@ imageMe = (msg, query, animated, faces, cb) ->
       images = JSON.parse(body)
       images = images.responseData?.results
       if images?.length > 0
-        image  = msg.random images
-        cb "#{image.unescapedUrl}#.png"
+        image = msg.random images
+        cb ensureImageExtension image.unescapedUrl
 
+ensureImageExtension = (url) ->
+  ext = url.split('.').pop()
+  if /(png|jpe?g|gif)/i.test(ext)
+    url
+  else
+    "#{url}#.png"
