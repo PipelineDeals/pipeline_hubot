@@ -120,7 +120,7 @@ module.exports = (robot) ->
       commentOnPR(prNum, "Release version: #{version}", msg)
       mergePR(prNum, msg)
       msg.send("The PR has been merged.")
-      msg.send("I like a man who takes charge!")
+      msg.send("Look at you, all taking charge of things. (badass)")
 
   robot.respond /boa constrictor/i, (msg) ->
     msg.send "ITS SNAKEY TIME!!"
