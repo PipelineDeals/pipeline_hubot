@@ -215,6 +215,7 @@ module.exports = (robot) ->
     github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}?access_token=#{github_access_token}"
     msg.http(github_issue_api_url).get(github_issue_api_url) (err, res, body) ->
       json = JSON.parse body
+      console.log("json is ", json)
       title = json['title']
       matches = title.match(/\[.*?\]/g)
       return cb(null) if matches == null
