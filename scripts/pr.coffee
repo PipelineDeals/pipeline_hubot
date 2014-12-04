@@ -8,7 +8,7 @@
 #   HUBOT_GITHUB_ACCESS_TOKEN - An access token for a Github user that can read PRs
 #
 # Commands:
-#   `PRnum` or `repo_name#num` - Returns title and link to PR if found
+#   `PR#####` or `pr:repo_name/#####` - Returns title and link to PR if found
 #
 # Author:
 #   Christopher David Yudichak
@@ -38,12 +38,12 @@ class PrLinker
     @msg.send pr.html_url
 
 module.exports = (robot) ->
-  robot.hear /(.*(PR#?|[a-z_\-]+#)\d{1,5}.*)/i, (msg) ->
+  robot.hear /(.*(PR#?|pr:[a-z_\-]+\/)\d{1,5}.*)/i, (msg) ->
     linker = new PrLinker(robot, msg)
     line = msg.match[1]
-    for substr in line.match(/(PR#?|[a-z_\-]+#)\d+/gi)
-      matchdata = substr.match(/(PR#?|[a-z_\-]+#)(\d+)/i)
-      repo = matchdata[1].replace('#', '')
+    for substr in line.match(/(PR#?|pr:[a-z_\-]+\/)\d+/gi)
+      matchdata = substr.match(/(PR#?|pr:[a-z_\-]+\/)(\d+)/i)
+      repo = matchdata[1].replace('/', '').replace('pr:', '')
       repo = 'pipeline_deals' if repo.match(/PR#?/)
       pr_number = matchdata[2]
       linker.run(repo, pr_number)
