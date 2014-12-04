@@ -35,6 +35,7 @@ class PrLinker
 
   handleSuccess: (repo, body) ->
     pr = JSON.parse body
+    @msg.send "#{repo}/#{pr.number}: #{pr.title}"
     @msg.send pr.html_url
 
 module.exports = (robot) ->
