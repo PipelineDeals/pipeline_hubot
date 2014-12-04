@@ -29,8 +29,6 @@ class PrLinker
     @robot.http(@githubPrUrl(repo, prNum)).get() (err, res, body) =>
       if res.statusCode == 200
         @handleSuccess(repo, body)
-      else
-        @handleFailure(repo, prNum)
 
   githubPrUrl: (repo, prNum) ->
     "#{@githubApiUrl}/#{@githubOrg}/#{repo}/pulls/#{prNum}?access_token=#{@githubAccessToken}"
@@ -39,9 +37,6 @@ class PrLinker
     pr = JSON.parse body
     @msg.send "#{repo}/#{pr.number}: #{pr.title}"
     @msg.send pr.html_url
-
-  handleFailure: (repo, prNum) ->
-    @msg.send "Couldn't find a PR #{repo}/#{prNum}"
 
 module.exports = (robot) ->
   robot.hear /(.*(PR#?|[a-z_\-]+\/)\d{1,5}.*)/i, (msg) ->
