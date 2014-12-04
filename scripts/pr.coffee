@@ -8,45 +8,48 @@
 #   HUBOT_GITHUB_ACCESS_TOKEN - An access token for a Github user that can read PRs
 #
 # Commands:
-#   PR##### - Returns title and link to PR if found
+#   `PR#####` or `repo_name/#####` - Returns title and link to PR if found
 #
 # Author:
 #   Christopher David Yudichak
 #
 # Example:
-#   (user)  > What the status of PR123?
-#   (hubot) > PR #123: make new business cards work on legacy agenda
+#   (user)  > What the status of pipeline_deals/123?
+#   (hubot) > pipeline_deals/123: make new business cards work on legacy agenda
 #   (hubot) > https://github.com/PipelineDeals/pipeline_deals/pull/123
 
 class PrLinker
   githubAccessToken: process.env.HUBOT_GITHUB_ACCESS_TOKEN
   githubApiUrl:      'https://api.github.com/repos'
-  githubRepo:        'PipelineDeals/pipeline_deals'
+  githubOrg:        'PipelineDeals'
 
   constructor: (@robot, @msg) ->
 
-  run: (prNum) ->
-    @robot.http(@githubPrUrl(prNum)).get() (err, res, body) =>
+  run: (repo, prNum) ->
+    @robot.http(@githubPrUrl(repo, prNum)).get() (err, res, body) =>
       if res.statusCode == 200
-        @handleSuccess(body)
+        @handleSuccess(repo, body)
       else
-        @handleFailure(prNum)
+        @handleFailure(repo, prNum)
 
-  githubPrUrl: (prNum) ->
-    "#{@githubApiUrl}/#{@githubRepo}/pulls/#{prNum}?access_token=#{@githubAccessToken}"
+  githubPrUrl: (repo, prNum) ->
+    "#{@githubApiUrl}/#{@githubOrg}/#{repo}/pulls/#{prNum}?access_token=#{@githubAccessToken}"
 
-  handleSuccess: (body) ->
+  handleSuccess: (repo, body) ->
     pr = JSON.parse body
-    @msg.send "PR ##{pr.number}: #{pr.title}"
+    @msg.send "#{repo}/#{pr.number}: #{pr.title}"
     @msg.send pr.html_url
 
-  handleFailure: (prNum) ->
-    @msg.send "Couldn't find a PR ##{prNum}"
+  handleFailure: (repo, prNum) ->
+    @msg.send "Couldn't find a PR #{repo}/#{prNum}"
 
 module.exports = (robot) ->
-  robot.hear /(.*PR#?\d+.*)/i, (msg) ->
+  robot.hear /(.*(PR#?|[a-z_\-]+\/)\d{1,5}.*)/i, (msg) ->
     linker = new PrLinker(robot, msg)
     line = msg.match[1]
-    for substr in line.match(/PR#?\d+/gi)
-      pr_number = substr.match(/PR#?(\d+)/i)[1]
-      linker.run(pr_number)
+    for substr in line.match(/(PR#?|[a-z_\-]+\/)\d+/gi)
+      matchdata = substr.match(/(PR#?|[a-z_\-]+\/)(\d+)/i)
+      repo = matchdata[1].replace('/', '')
+      repo = 'pipeline_deals' if repo.match(/PR#?/)
+      pr_number = matchdata[2]
+      linker.run(repo, pr_number)
