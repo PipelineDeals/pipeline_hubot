@@ -18,7 +18,7 @@
 #   (hubot) > pipeline_deals/123: make new business cards work on legacy agenda
 #   (hubot) > https://github.com/PipelineDeals/pipeline_deals/pull/123
 
-class PrLinker
+class DeprecatedPrLinker
   githubAccessToken: process.env.HUBOT_GITHUB_ACCESS_TOKEN
   githubApiUrl:      'https://api.github.com/repos'
   githubOrg:        'PipelineDeals'
@@ -39,12 +39,12 @@ class PrLinker
     @msg.send pr.html_url
 
 module.exports = (robot) ->
-  robot.hear /(.*(PR#?|pr:[a-z_\-]+\/)\d{1,5}.*)/i, (msg) ->
-    linker = new PrLinker(robot, msg)
+  robot.hear /(.*(PR#?|[a-z_\-]+#)\d{1,5}.*)/i, (msg) ->
+    linker = new DeprecatedPrLinker(robot, msg)
     line = msg.match[1]
-    for substr in line.match(/(PR#?|pr:[a-z_\-]+\/)\d+/gi)
-      matchdata = substr.match(/(PR#?|pr:[a-z_\-]+\/)(\d+)/i)
-      repo = matchdata[1].replace('/', '').replace('pr:', '')
+    for substr in line.match(/(PR#?|[a-z_\-]+#)\d+/gi)
+      matchdata = substr.match(/(PR#?|[a-z_\-]+#)(\d+)/i)
+      repo = matchdata[1].replace('#', '')
       repo = 'pipeline_deals' if repo.match(/PR#?/)
       pr_number = matchdata[2]
       linker.run(repo, pr_number)
