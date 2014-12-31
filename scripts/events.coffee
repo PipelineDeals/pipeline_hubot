@@ -17,4 +17,3 @@ module.exports = (robot) ->
 
   robot.on 'debug', (event) ->
     robot.send event.user, util.inspect event
-
