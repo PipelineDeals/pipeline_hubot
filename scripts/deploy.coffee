@@ -21,7 +21,7 @@
 
 _ = require("underscore")
 deploymanager_token = process.env.DEPLOYMANAGER_TOKEN
-deploymanager_url  = "http://deploymanager.pipelinedeals.com/api"
+deploymanager_url  = "https://deployer.pipelinedeals.com/api"
 
 module.exports = (robot) ->
   robot.respond /deploy( (.*))?/i, (msg) ->
