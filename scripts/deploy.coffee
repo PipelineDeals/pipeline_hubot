@@ -9,7 +9,6 @@
 #
 # Commands:
 #   hubot deploy status - Responds with the deploy status of each app
-#   hubot deploy pld:status - Responds with the deploy status
 #   hubot deploy pld:build - Creates the servers for a deploy
 #   hubot deploy pld:deploy - Sends the deploy out the door
 #   hubot deploy pld:rollback - Creates the servers for a build
