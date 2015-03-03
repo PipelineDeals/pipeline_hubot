@@ -32,7 +32,7 @@ fogbugz_token = process.env.HUBOT_FOGBUGZ_TOKEN
 
 jira_token = process.env.JIRA_TOKEN
 deploymanager_token = process.env.DEPLOYMANAGER_TOKEN
-deploymanager_url  = "http://deploymanager.pipelinedeals.com"
+deploymanager_url  = "https://deployer.pipelinedeals.com"
 
 JiraPeerReviewed = 751
 JiraClosed = 781
@@ -83,7 +83,7 @@ module.exports = (robot) ->
       labelPr(prNum, GithubQAApprovedLabel, msg)
     qAAcceptable(prNum, ticketCanBePeerReviewed, ticketCannotBePeerReviewed, msg)
 
-  robot.respond /get deploymanager status/i, (msg) ->
+  robot.respond /get deployer status/i, (msg) ->
     getDeployManagerStatus msg, (status) ->
       msg.send("status = ", status);
 
