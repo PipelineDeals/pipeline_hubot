@@ -11,16 +11,14 @@
 #   HUBOT_FOGBUGZ_TOKEN - A Fogbugz API token used to resolve open tickets
 #
 # Commands:
-#   hubot pr dev accept <pr number> - Accepts a PR and reassigns to QA
-#   hubot pr qa accept <pr number> - QA accepts pr
-#   hubot business owner approve <jira ticket> - Business owner approve a ticket
-#   hubot pr merge <pr number> - Merge a PR and update the jira ticket
-#   hubot pr merge <pr number> - Merges a PR
-#   hubot github release - Tag the release in github, write release notes
-#   hubot close released tickets - Close out tickets that have the current release num
+#   hubot pr code review accept <pr number> - Code review is complete
+#   hubot business owner approve <jira ticket> - Business owner approve a PLD bug
+#   hubot boa <jira ticket> - Business owner approve a PLD bug
+#   hubot pr merge <pr number> - Merge a PR and transition the ticket to the "Merged" status
+#   hubot pr force merge <pr number> - Merges a PR, regardless of the jira ticket status
 #
 # Author:
-#   brandonhilkert
+#   gammons
 #
 
 _ = require("underscore")
@@ -34,15 +32,11 @@ jira_token = process.env.JIRA_TOKEN
 deploymanager_token = process.env.DEPLOYMANAGER_TOKEN
 deploymanager_url  = "https://deployer.pipelinedeals.com"
 
-JiraPeerReviewed = 751
-JiraClosed = 781
-JiraBusinessOwnerApproved = 771
+JiraBusinessOwnerApprovedStatus = 11
+JiraDoneStatus = 10
+JiraCodeReviewCompleteStatus = 9
 JiraPRCustomField = "customfield_10400"
-JiraReleaseVersionCustomField = "customfield_10401"
-JiraDeployableStatus = 10011 # the ticket is in business owner approved atatus
-JiraBusinesOwnerApprovableStatus = 10010
 
-GithubDevApprovedLabel = "Dev peer reviewed"
 GithubQAApprovedLabel = "QA approved"
 GithubBusinessOwnerApprovedLabel = "Business owner approved"
 
@@ -50,20 +44,7 @@ GithubTestFailure = 'failure'
 GithubTestSuccess = 'success'
 GithubTestPending = 'pending'
 
-ReleaseVersion = null
-
 module.exports = (robot) ->
-
-  robot.respond /pr dev accept (\d+)/i, (msg) ->
-    prNum = msg.match[1]
-    getBranchStatus prNum, msg, (status) ->
-      switch status
-        when GithubTestFailure then msg.send "Can't accept PR, as the latest specs failed"
-        when GithubTestPending then msg.send "Whoa there partner, wait till the tests finish running!"
-        when null then msg.send "Looks like things are backed up.  Please wait until circleci runs on this branch."
-        when GithubTestSuccess
-          devAcceptPR(prNum, msg)
-          labelPr(prNum, GithubDevApprovedLabel, msg)
 
   robot.respond /pr qa accept (\d+)/i, (msg) ->
     prNum = msg.match[1]
@@ -78,14 +59,9 @@ module.exports = (robot) ->
             qAAcceptPR(prNum, msg)
             labelPr(prNum, GithubQAApprovedLabel, msg)
     ticketCannotBePeerReviewed = ->
-      msg.send("I couldn't update the jira ticket, because the ticket's state cannot transition to peer reviewed.  That means one of the following:  1) The ticket is already in the peer reviewed state, 2) It is not marked as resolved, 3) it is marked as closed or deployed.  However, I will update the github PR.");
-      qAAcceptPR(prNum, msg)
+      msg.send("The ticket is not in the \"Code Review\" state.  However I'll update github.  Be sure that the ticket is in \"Code Review Complete\" state")
       labelPr(prNum, GithubQAApprovedLabel, msg)
     qAAcceptable(prNum, ticketCanBePeerReviewed, ticketCannotBePeerReviewed, msg)
-
-  robot.respond /get deployer status/i, (msg) ->
-    getDeployManagerStatus msg, (status) ->
-      msg.send("status = ", status);
 
   robot.respond /pr merge (\d+)/i, (msg) ->
     prNum = msg.match[1]
@@ -99,32 +75,18 @@ module.exports = (robot) ->
             if status == null
               msg.send("I could not find the jira ticket!")
               return
-            if status.toString() == JiraDeployableStatus.toString()
-              # close the jira ticket and set the release version
-              work = (ticketNum) ->
-                setJiraTicketReleaseVersion(ticketNum, msg)
-                #transitionTicket(ticketNum, JiraClosed, msg) # not until we move to CD
-              getJiraTicketFromPR(prNum, msg, work)
-
-              # put deploy version in PR and merge it
-              getReleaseVersion msg, (version) ->
-                commentOnPR(prNum, "Release version: #{version}", msg)
-                mergePR(prNum, msg)
-                msg.send("The PR has been merged and the ticket has been updated.")
+            if status.toString() == JiraDoneStatus.toString()
+              mergePR(prNum, msg)
+              msg.send("The PR has been merged and the ticket has been updated.")
             else
               msg.send("This ticket is not mergeable, because the business owner has not yet approved it.")
 
   robot.respond /pr force merge (\d+)/i, (msg) ->
     prNum = msg.match[1]
     getReleaseVersion msg, (version) ->
-      commentOnPR(prNum, "Release version: #{version}", msg)
       mergePR(prNum, msg)
       msg.send("The PR has been merged.")
-      msg.send("Look at you, all taking charge of things. (badass)")
-
-  robot.respond /boa constrictor/i, (msg) ->
-    msg.send "ITS SNAKEY TIME!!"
-    msg.send "hubot image me snakes"
+      msg.send(getForceMergeMessage())
 
   robot.respond /boa (.*)/i, (msg) ->
     ticket = msg.match[1]
@@ -134,12 +96,16 @@ module.exports = (robot) ->
     ticket = msg.match[1]
     businessOwnerApprove(ticket, msg)
 
+  ######################################
+  # Utility functions
+  ######################################
+  
   businessOwnerApprove = (ticket, msg) ->
     getTicketStatus ticket, msg, (status) ->
       if status == null
         msg.send("I could not find the jira ticket!")
         return
-      if status.toString() == JiraBusinesOwnerApprovableStatus.toString()
+      if status.toString() == JiraCodeReviewCompleteStatus.toString()
         transitionTicket(ticket, JiraBusinessOwnerApproved, msg)
         work = (prNum) ->
           return if prNum == null
@@ -147,23 +113,10 @@ module.exports = (robot) ->
           labelPr(prNum, GithubBusinessOwnerApprovedLabel, msg)
         getPrFromJiraTicket(ticket, msg, work)
       else
-        msg.send("This ticket cannot be approved by the business owner, as it has not been accepted by QA yet.")
-
-  robot.respond /get release version/i, (msg) ->
-    getReleaseVersion msg, (version) ->
-      msg.send("version is #{version}")
-
-  ######################################
-  # Utility functions
-  ######################################
-
-  devAcceptPR = (prNum, msg) ->
-    commentOnPR(prNum, approveComment(msg.message.user.name), msg)
-    assignPRtoQA(prNum, msg)
-    msg.send("#{linkToPr(prNum)} has been accepted by the devs. (#{getHipchatEmoji()})")
+        msg.send("Can't be BO approved because ticket is in the wrong state.  It needs to be in \"Code review complete\" state.")
 
   qAAcceptable = (prNum, successFn, failFn, msg) ->
-    getJiraTicketFromPR prNum, msg, (ticketNum) -> ticketTransitionableTo(ticketNum, JiraPeerReviewed, successFn, failFn, msg)
+    getJiraTicketFromPR prNum, msg, (ticketNum) -> ticketTransitionableTo(ticketNum, JiraCodeReviewCompleteStatus, successFn, failFn, msg)
 
   qAAcceptPR = (prNum, msg) ->
     commentOnPR(prNum, approveComment("#{msg.message.user.name} (QA)"), msg)
@@ -205,12 +158,6 @@ module.exports = (robot) ->
 
   approveComment = (user) -> "#{user} approves!  :#{getGithubEmoji()}:"
 
-  assignPRtoQA = (prNum, msg) ->
-    github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}?access_token=#{github_access_token}"
-    payload = JSON.stringify({ assignee: github_qa_username })
-    msg.http(github_issue_api_url).post(payload) (err, res, body) ->
-      response = JSON.parse body
-
   getJiraTicketFromPR = (prNum, msg, cb) ->
     github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}?access_token=#{github_access_token}"
     msg.http(github_issue_api_url).get(github_issue_api_url) (err, res, body) ->
@@ -239,7 +186,7 @@ module.exports = (robot) ->
     github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}?access_token=#{github_access_token}"
     work = (ticketNum) ->
       addPrURLToTicket(ticketNum, prNum, msg)
-      transitionTicket(ticketNum, JiraPeerReviewed, msg)
+      transitionTicket(ticketNum, JiraCodeReviewCompleteStatus, msg)
     getJiraTicketFromPR(prNum, msg, work)
 
   addPrURLToTicket = (ticketNum, prNum, msg) ->
@@ -298,23 +245,6 @@ module.exports = (robot) ->
       url  = "https://api.github.com/repos/PipelineDeals/pipeline_deals/git/refs/heads/#{branch}?access_token=#{github_access_token}"
       msg.http(url).delete() (err, res, body) -> console.log err
 
-  setJiraTicketReleaseVersion = (ticketNum, msg) ->
-    fields = {}
-    getReleaseVersion msg, (version) ->
-      fields[JiraReleaseVersionCustomField] = version.toString()
-      payload = {"fields": fields}
-      msg.
-        http("https://pipelinedeals.atlassian.net/rest/api/2/issue/#{ticketNum}").
-        headers("Authorization": "Basic #{jira_token}", "Content-Type": "application/json").
-        put(JSON.stringify(payload)) (err, res, body) ->
-          console.log "release version err = ", err
-          console.log "release version body = ", body
-          console.log "release version res = ", res
-
-  getReleaseVersion = (msg, cb) ->
-    msg.http("#{deploymanager_url}/version?token=#{deploymanager_token}").get() (err, res, body) ->
-      cb(JSON.parse(body).version)
-
   getDeployManagerStatus= (msg, cb) ->
     msg.http("#{deploymanager_url}/api/status?token=#{deploymanager_token}").get() (err, res, body) ->
       cb(JSON.parse(body).message.pld)
@@ -327,6 +257,9 @@ module.exports = (robot) ->
 
   getHipchatEmoji = ->
     selectRandom ["allthethings", "awthanks", "awyeah", "basket", "beer", "bunny", "cadbury", "cake", "candycorn", "caruso", "chewie", "chocobunny", "chucknorris", "coffee", "dance", "dealwithit", "hipster", "kwanzaa", "menorah", "ninja", "philosoraptor", "pbr", "present", "tree", "thumbsup", "tea", "success", "yougotitdude"]
+
+  getForceMergeMessage = ->
+    selectRandom ["Hold on to your butts!", "Crushin' it!", "Forcin' merges and takin' names.", "Cowboy coder alert!", "You a gambler?", "Someone lives their life a quarter mile at a time.", "Because F it, that's why.", "AWWW YEAH.", "Rock on with your bad self.", "Looks like we've hit the big time, folks.", "Look out, ol fast hands mcgee is forcin merges again!"]
 
   selectRandom = (list) ->
     list[Math.floor(Math.random() * list.length)]
