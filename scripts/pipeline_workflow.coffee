@@ -164,7 +164,7 @@ module.exports = (robot) ->
       json = JSON.parse body
       console.log("json is ", json)
       title = json['title']
-      matches = title.match(/\[[A-Z]*-[0-9]*?\]/g)
+      matches = title.match(/\[[A-Z]+-[0-9]+?\]/g)
       return cb(null) if matches == null
       _.each matches, (ticket) ->
         ticket = ticket.replace('#','').replace('[','').replace(']','')
