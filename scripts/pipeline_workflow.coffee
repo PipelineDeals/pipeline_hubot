@@ -83,10 +83,9 @@ module.exports = (robot) ->
 
   robot.respond /pr force merge (\d+)/i, (msg) ->
     prNum = msg.match[1]
-    getReleaseVersion msg, (version) ->
-      mergePR(prNum, msg)
-      msg.send("The PR has been merged.")
-      msg.send(getForceMergeMessage())
+    mergePR(prNum, msg)
+    msg.send("The PR has been merged.")
+    msg.send(getForceMergeMessage())
 
   robot.respond /boa (.*)/i, (msg) ->
     ticket = msg.match[1]
