@@ -34,7 +34,7 @@ deploymanager_url  = "https://deployer.pipelinedeals.com"
 
 JiraBusinessOwnerApprovedStatus = 11
 JiraDoneStatus = 10
-JiraCodeReviewCompleteStatus = 9
+JiraCodeReviewCompleteTransition = 561
 JiraPRCustomField = "customfield_10400"
 
 GithubQAApprovedLabel = "QA approved"
@@ -104,7 +104,7 @@ module.exports = (robot) ->
       if status == null
         msg.send("I could not find the jira ticket!")
         return
-      if status.toString() == JiraCodeReviewCompleteStatus.toString()
+      if status.toString() == JiraCodeReviewCompleteTransition.toString()
         transitionTicket(ticket, JiraBusinessOwnerApproved, msg)
         work = (prNum) ->
           return if prNum == null
@@ -115,7 +115,7 @@ module.exports = (robot) ->
         msg.send("Can't be BO approved because ticket is in the wrong state.  It needs to be in \"Code review complete\" state.")
 
   qAAcceptable = (prNum, successFn, failFn, msg) ->
-    getJiraTicketFromPR prNum, msg, (ticketNum) -> ticketTransitionableTo(ticketNum, JiraCodeReviewCompleteStatus, successFn, failFn, msg)
+    getJiraTicketFromPR prNum, msg, (ticketNum) -> ticketTransitionableTo(ticketNum, JiraCodeReviewCompleteTransition, successFn, failFn, msg)
 
   qAAcceptPR = (prNum, msg) ->
     commentOnPR(prNum, approveComment("#{msg.message.user.name} (QA)"), msg)
@@ -185,7 +185,7 @@ module.exports = (robot) ->
     github_issue_api_url = "https://api.github.com/repos/PipelineDeals/pipeline_deals/issues/#{prNum}?access_token=#{github_access_token}"
     work = (ticketNum) ->
       addPrURLToTicket(ticketNum, prNum, msg)
-      transitionTicket(ticketNum, JiraCodeReviewCompleteStatus, msg)
+      transitionTicket(ticketNum, JiraCodeReviewCompleteTransition, msg)
     getJiraTicketFromPR(prNum, msg, work)
 
   addPrURLToTicket = (ticketNum, prNum, msg) ->
