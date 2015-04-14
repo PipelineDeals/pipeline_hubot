@@ -14,14 +14,15 @@
 #   brandonhilkert
 #
 
-_ = require("underscore")
 deploymanager_token = process.env.DEPLOYMANAGER_TOKEN
 deploymanager_url  = "https://deployer.pipelinedeals.com/api"
 
 module.exports = (robot) ->
   robot.respond /queue stats/i, (msg) ->
-    msg.http(queueStatsUrl("old-queue-server")).get()
-    msg.http(queueStatsUrl("hot-queue-server")).get()
+    msg.http(queueStatsUrl("old-queue-server")).get() (err, res, body) ->
+      json = JSON.parse body
+      msg.send "what is going on"
+    # msg.http(queueStatsUrl("hot-queue-server")).get()
 
   ######################################
   # Utility functions
