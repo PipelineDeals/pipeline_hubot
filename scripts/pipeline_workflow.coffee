@@ -14,8 +14,7 @@
 #   hubot pr code review accept <pr number> - Code review is complete
 #   hubot business owner approve <jira ticket> - Business owner approve a PLD bug
 #   hubot boa <jira ticket> - Business owner approve a PLD bug
-#   hubot pr merge <pr number> - Merge a PR and transition the ticket to the "Merged" status
-#   hubot pr force merge <pr number> - Merges a PR, regardless of the jira ticket status
+#   hubot pr merge <pr number> - Merge a PR
 #
 # Author:
 #   gammons
@@ -65,27 +64,11 @@ module.exports = (robot) ->
 
   robot.respond /pr merge (\d+)/i, (msg) ->
     prNum = msg.match[1]
-
-    getDeployManagerStatus msg, (status) ->
-      if status != 'ready'
-        msg.send("No merging until deploy state is 'ready'");
-      else
-        getJiraTicketFromPR prNum, msg, (ticketNum) ->
-          getTicketStatus ticketNum, msg, (status) ->
-            if status == null
-              msg.send("I could not find the jira ticket!")
-              return
-            if status.toString() == JiraDoneStatus.toString()
-              mergePR(prNum, msg)
-              msg.send("The PR has been merged and the ticket has been updated.")
-            else
-              msg.send("This ticket is not mergeable, because the business owner has not yet approved it.")
-
-  robot.respond /pr force merge (\d+)/i, (msg) ->
-    prNum = msg.match[1]
     mergePR(prNum, msg)
     msg.send("The PR has been merged.")
-    msg.send(getForceMergeMessage())
+
+  robot.respond /pr force merge (\d+)/i, (msg) ->
+    msg.send("Unnecessary use of force.")
 
   robot.respond /boa (.*)/i, (msg) ->
     ticket = msg.match[1]
@@ -98,7 +81,7 @@ module.exports = (robot) ->
   ######################################
   # Utility functions
   ######################################
-  
+
   businessOwnerApprove = (ticket, msg) ->
     getTicketStatus ticket, msg, (status) ->
       if status == null
@@ -256,9 +239,6 @@ module.exports = (robot) ->
 
   getHipchatEmoji = ->
     selectRandom ["allthethings", "awthanks", "awyeah", "basket", "beer", "bunny", "cadbury", "cake", "candycorn", "caruso", "chewie", "chocobunny", "chucknorris", "coffee", "dance", "dealwithit", "hipster", "kwanzaa", "menorah", "ninja", "philosoraptor", "pbr", "present", "tree", "thumbsup", "tea", "success", "yougotitdude"]
-
-  getForceMergeMessage = ->
-    selectRandom ["Hold on to your butts!", "Crushin' it!", "Forcin' merges and takin' names.", "Cowboy coder alert!", "You a gambler?", "Someone lives their life a quarter mile at a time.", "Because F it, that's why.", "AWWW YEAH.", "Rock on with your bad self.", "Looks like we've hit the big time, folks.", "Look out, ol fast hands mcgee is forcin merges again!"]
 
   selectRandom = (list) ->
     list[Math.floor(Math.random() * list.length)]
