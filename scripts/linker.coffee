@@ -79,5 +79,6 @@ module.exports = (robot) ->
       linker = switch type
         when 'pr' then new PrLinker(robot, msg)
         when 'jira' then new JiraLinker(robot, msg)
-      linker.run(number)
+
+      linker.run(number) if linker
 
