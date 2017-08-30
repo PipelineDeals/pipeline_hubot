@@ -23,8 +23,15 @@ deploymanager_token = process.env.DEPLOYMANAGER_TOKEN
 deploymanager_url  = "https://deployer.pipelinedeals.com/api"
 
 module.exports = (robot) ->
+
   robot.respond /deploy( (.*))?/i, (msg) ->
+
+    # Only deploy from the correct hipchat room
+    if msg.message.room != "Deployments"
+      return
+
     command = msg.match[2]
+
     if command is "status"
       statusRequest(msg)
     else
