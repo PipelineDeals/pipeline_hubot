@@ -28,8 +28,10 @@ module.exports = (robot) ->
 
   robot.respond /deploy( (.*))?/i, (msg) ->
 
+    robot.logger.info("Deploy command from room : " + msg.message.room)
+
     # Only deploy from the whitelisted rooms in Hipchat
-    unless msg.message.room in DEPLOYMENT_ROOMS      
+    unless msg.message.room in DEPLOYMENT_ROOMS
       return
 
     command = msg.match[2]
