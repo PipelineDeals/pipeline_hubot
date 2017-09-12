@@ -22,9 +22,18 @@ _ = require("underscore")
 deploymanager_token = process.env.DEPLOYMANAGER_TOKEN
 deploymanager_url  = "https://deployer.pipelinedeals.com/api"
 
+DEPLOYMENT_ROOMS = ["Deployments", "Operations talk"];
+
 module.exports = (robot) ->
+
   robot.respond /deploy( (.*))?/i, (msg) ->
+
+    # Only deploy from the whitelisted rooms in Hipchat
+    unless msg.message.room in DEPLOYMENT_ROOMS      
+      return
+
     command = msg.match[2]
+
     if command is "status"
       statusRequest(msg)
     else
