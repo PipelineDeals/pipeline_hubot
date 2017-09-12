@@ -22,7 +22,7 @@ _ = require("underscore")
 deploymanager_token = process.env.DEPLOYMANAGER_TOKEN
 deploymanager_url  = "https://deployer.pipelinedeals.com/api"
 
-DEPLOYMENT_ROOMS = ["deployments", "dev_talk"]; # Operations Talk is dev_talk for some reason
+DEPLOYMENT_ROOMS = ["deployments"];
 
 module.exports = (robot) ->
 
